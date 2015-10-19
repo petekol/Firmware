@@ -3,7 +3,8 @@
 	url = git://github.com/mavlink/c_library.git
 [submodule "NuttX"]
 	path = NuttX
-	url = git://github.com/PX4/PX4NuttX.git
+	url = https://github.com/petekol/PX4NuttX.git
+	branch = upstream
 [submodule "libuavcan"]
 	path = src/lib/uavcan
 	url = git://github.com/UAVCAN/libuavcan.git
@@ -19,3 +20,6 @@
 [submodule "src/lib/eigen"]
 	path = src/lib/eigen
 	url = https://github.com/PX4/eigen.git
+[submodule "nuttx"]
+	url = https://github.com/petekol/nuttx.git
+	branch = upstream
