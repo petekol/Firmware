@@ -3,9 +3,9 @@
 #
 
 #
-# Configure the toolchain
+# Configure the toolchain, CONFIG_BOARD value is a c define name - do not use special chars
 #
 CONFIG_ARCH			 = CORTEXM4F
-CONFIG_BOARD		 = PX4_LPC4370-LINK2
+CONFIG_BOARD		 = PX4LPC4370_LINK2
 
 include $(PX4_MK_DIR)nuttx/toolchain_gnu-arm-eabi.mk
