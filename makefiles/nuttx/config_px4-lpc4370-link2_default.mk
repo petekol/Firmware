@@ -6,19 +6,17 @@
 # Use the configuration's ROMFS, copy the px4-lpc4370-link2 firmware into
 # the ROMFS if it's available
 #
-ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_common
+ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_test
 ROMFS_OPTIONAL_FILES = 
 
 #
 # Board support modules
 #
 MODULES		+= drivers/device
-MODULES		+= drivers/mpu6000
+MODULES		+= drivers/mpu9250
 MODULES		+= drivers/hmc5883
 MODULES		+= modules/sensors
 MODULES		+= drivers/mkblctrl
-MODULES		+= drivers/px4flow
-MODULES		+= drivers/oreoled
 
 #
 # System commands
@@ -37,44 +35,13 @@ MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/mtd
 MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/ver
-
-#
-# General system control
-#
-MODULES		+= modules/commander
-MODULES		+= modules/navigator
-MODULES		+= modules/mavlink
-
-#
-# Estimation modules (EKF/ SO3 / other filters)
-#
-MODULES		+= modules/attitude_estimator_ekf
-MODULES		+= modules/attitude_estimator_q
-MODULES		+= modules/ekf_att_pos_estimator
-MODULES		+= modules/position_estimator_inav
-
-#
-# Vehicle Control
-#
-MODULES		+= modules/fw_pos_control_l1
-MODULES		+= modules/fw_att_control
-MODULES		+= modules/mc_att_control
-MODULES		+= modules/mc_pos_control
-MODULES 	+= modules/vtol_att_control
-
-#
-# Logging
-#
-MODULES		+= modules/sdlog2
-
 #
 # Library modules
 #
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
-MODULES		+= modules/controllib
 MODULES		+= modules/uORB
-MODULES		+= modules/dataman
+
 
 #
 # Libraries
@@ -82,52 +49,8 @@ MODULES		+= modules/dataman
 LIBRARIES	+= lib/mathlib/CMSIS
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
-MODULES		+= lib/ecl
-MODULES		+= lib/external_lgpl
 MODULES		+= lib/conversion
-MODULES		+= lib/launchdetection
 MODULES		+= platforms/nuttx
-
-#
-# OBC challenge
-#
-MODULES		+= modules/bottle_drop
-
-#
-# PX4 flow estimator, good for indoors
-#
-MODULES		+= examples/flow_position_estimator
-
-#
-# Rover apps
-#
-MODULES		+= examples/rover_steering_control
-
-#
-# Demo apps
-#
-#MODULES		+= examples/math_demo
-# Tutorial code from
-# https://pixhawk.ethz.ch/px4/dev/hello_sky
-#MODULES		+= examples/px4_simple_app
-
-# Tutorial code from
-# https://pixhawk.ethz.ch/px4/dev/daemon
-#MODULES		+= examples/px4_daemon_app
-
-# Tutorial code from
-# https://pixhawk.ethz.ch/px4/dev/debug_values
-#MODULES		+= examples/px4_mavlink_debug
-
-# Tutorial code from
-# https://pixhawk.ethz.ch/px4/dev/example_fixedwing_control
-#MODULES			+= examples/fixedwing_control
-
-# Hardware test
-#MODULES			+= examples/hwtest
-
-# Generate parameter XML file
-GEN_PARAM_XML = 1
 
 #
 # Transitional support - add commands from the NuttX export archive.
