@@ -1,0 +1,106 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2013, 2014 PX4 Development Team. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name PX4 nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/**
+ * @file board_config.h
+ *
+ * PX4Link2 internal definitions
+ */
+
+#pragma once
+
+/****************************************************************************************************
+ * Included Files
+ ****************************************************************************************************/
+
+#include <px4_config.h>
+#include <nuttx/compiler.h>
+#include <stdint.h>
+
+__BEGIN_DECLS
+
+/* these headers are not C++ safe */
+#include <stm32.h>
+#include <arch/board/board.h>
+
+/****************************************************************************************************
+ * Definitions
+ ****************************************************************************************************/
+
+#define GPIO_LED       (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT0 | GPIO_PIN8)
+
+#define PX4_SPI_BUS_SENSORS	2
+#define PX4_SPI_BUS_EXT		4
+
+/* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
+#define PX4_SPIDEV_GYRO		1
+#define PX4_SPIDEV_ACCEL_MAG 2
+#define PX4_SPIDEV_BARO		3
+#define PX4_SPIDEV_MPU		4
+#define PX4_SPIDEV_HMC		5
+
+/* I2C busses */
+#define PX4_I2C_BUS_EXPANSION	1
+#define PX4_I2C_BUS_ONBOARD	2
+
+#define PX4_I2C_OBDEV_HMC5883	0x1e
+
+/****************************************************************************************************
+ * Public Types
+ ****************************************************************************************************/
+
+/****************************************************************************************************
+ * Public data
+ ****************************************************************************************************/
+
+#ifndef __ASSEMBLY__
+
+/****************************************************************************************************
+ * Public Functions
+ ****************************************************************************************************/
+
+/****************************************************************************************************
+ * Name: stm32_spiinitialize
+ *
+ * Description:
+ *   Called to configure SPI chip select GPIO pins for the PX4FMU board.
+ *
+ ****************************************************************************************************/
+
+extern void stm32_spiinitialize(void);
+
+extern void stm32_usbinitialize(void);
+
+#endif /* __ASSEMBLY__ */
+
+__END_DECLS

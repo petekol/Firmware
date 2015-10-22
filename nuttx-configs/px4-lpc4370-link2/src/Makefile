@@ -1,7 +1,7 @@
 ############################################################################
-# configs/lpc4330-xplorer/src/Makefile
+# configs/px4fmu-v2_upstream/src/Makefile
 #
-#   Copyright (C) 2015 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2011 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,44 +35,49 @@
 
 -include $(TOPDIR)/Make.defs
 
+CFLAGS += -I$(TOPDIR)/sched
+
 ASRCS =
-CSRCS = lpc43_boot.c
+AOBJS = $(ASRCS:.S=$(OBJEXT))
 
-ifeq ($(CONFIG_NSH_ARCHINIT),y)
-CSRCS += lpc43_nsh.c
-endif
+CSRCS = empty.c
+COBJS = $(CSRCS:.c=$(OBJEXT))
 
-ifeq ($(CONFIG_ARCH_FPU),y)
-CSRCS += lpc43_ostest.c
-endif
+SRCS = $(ASRCS) $(CSRCS)
+OBJS = $(AOBJS) $(COBJS)
 
-ifeq ($(CONFIG_ARCH_LEDS),y)
-CSRCS += lpc43_autoleds.c
+ARCH_SRCDIR = $(TOPDIR)/arch/$(CONFIG_ARCH)/src
+ifeq ($(WINTOOL),y)
+  CFLAGS += -I "${shell cygpath -w $(ARCH_SRCDIR)/chip}" \
+            -I "${shell cygpath -w $(ARCH_SRCDIR)/common}" \
+            -I "${shell cygpath -w $(ARCH_SRCDIR)/armv7-m}"
 else
-CSRCS += lpc43_userleds.c
+  CFLAGS += -I$(ARCH_SRCDIR)/chip -I$(ARCH_SRCDIR)/common -I$(ARCH_SRCDIR)/armv7-m
 endif
 
-ifeq ($(CONFIG_USBMSC),y)
-CSRCS += lpc43_usbmsc.c
-endif
+all: libboard$(LIBEXT)
 
-ifeq ($(CONFIG_SPIFI_LIBRARY),y)
-CFLAGS += -DEUROBIRD
-SPIFI_LIB = spifi_lib
-CSRCS += $(SPIFI_LIB)/spifi_rom_api.c
-#CSRCS += $(SPIFI_LIB)/amic.c
-#CSRCS += $(SPIFI_LIB)/atmel.c
-#CSRCS += $(SPIFI_LIB)/chi.c
-#CSRCS += $(SPIFI_LIB)/eon.c
-#CSRCS += $(SPIFI_LIB)/esmt.c
-#CSRCS += $(SPIFI_LIB)/esmt.c
-#CSRCS += $(SPIFI_LIB)/giga.c
-#CSRCS += $(SPIFI_LIB)/macronix.c
-#CSRCS += $(SPIFI_LIB)/numonyx.c
-CSRCS += $(SPIFI_LIB)/spansion.c
-#CSRCS += $(SPIFI_LIB)/sst.c
-CSRCS += $(SPIFI_LIB)/winbond.c
-endif
+$(AOBJS): %$(OBJEXT): %.S
+	$(call ASSEMBLE, $<, $@)
 
-include $(TOPDIR)/configs/Board.mk
+$(COBJS) $(LINKOBJS): %$(OBJEXT): %.c
+	$(call COMPILE, $<, $@)
 
+libboard$(LIBEXT): $(OBJS)
+	$(call ARCHIVE, $@, $(OBJS))
+
+.depend: Makefile $(SRCS)
+	$(Q) $(MKDEP) $(CC) -- $(CFLAGS) -- $(SRCS) >Make.dep
+	$(Q) touch $@
+
+depend: .depend
+
+clean:
+	$(call DELFILE, libboard$(LIBEXT))
+	$(call CLEAN)
+
+distclean: clean
+	$(call DELFILE, Make.dep)
+	$(call DELFILE, .depend)
+
+-include Make.dep
