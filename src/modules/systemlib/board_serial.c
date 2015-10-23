@@ -46,6 +46,8 @@
 
 int get_board_serial(uint8_t *serialid)
 {
+
+#ifdef CONFIG_ARCH_CHIP_STM32
 	const volatile uint32_t *udid_ptr = (const uint32_t *)STM32_SYSMEM_UID;
 	union udid id;
 	val_read((uint32_t *)&id, udid_ptr, sizeof(id));
@@ -55,6 +57,7 @@ int get_board_serial(uint8_t *serialid)
 	serialid[0] = id.data[3];   serialid[1] = id.data[2];  serialid[2] = id.data[1];  serialid[3] = id.data[0];
 	serialid[4] = id.data[7];   serialid[5] = id.data[6];  serialid[6] = id.data[5];  serialid[7] = id.data[4];
 	serialid[8] = id.data[11];   serialid[9] = id.data[10];  serialid[10] = id.data[9];  serialid[11] = id.data[8];
+#endif
 
 	return 0;
 }

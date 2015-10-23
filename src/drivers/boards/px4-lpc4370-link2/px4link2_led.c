@@ -31,20 +31,18 @@
  *
  ****************************************************************************/
 
-/**
- * @file px4discovery_led.c
- *
- * PX4-stm32f4discovery LED backend.
- */
-
 #include <px4_config.h>
 
 #include <stdbool.h>
 
 #include "lpc43_gpio.h"
+#include "lpc43_pinconfig.h"
+
 #include "board_config.h"
 
 #include <nuttx/board.h>
+
+#include <px4_defines.h>
 
 /*
  * Ideally we'd be able to get these from up_internal.h,
@@ -60,30 +58,25 @@ extern void led_off(int led);
 extern void led_toggle(int led);
 __END_DECLS
 
-__EXPORT void board_led_initialize(void)
+__EXPORT void led_init(void)
 {
-	/* Configure GPIO_LED GPIO for output */
-
-	lpc43_gpio_config(GPIO_LED);
+	lpc43_pin_config(BOARD_LED_GPIO);
+	lpc43_gpio_config(BOARD_LED_OUT);
 }
 
-__EXPORT void board_led_on(int led)
-
+__EXPORT void led_on(int led)
 {
 	if (led == 1)
 	{
-		/* Pull down to switch on */
-		lpc43_gpio_write(GPIO_LED, false);
+		lpc43_gpio_write(BOARD_LED_OUT, true);
 	}
 }
 
-__EXPORT void board_led_off(int led)
-
+__EXPORT void led_off(int led)
 {
 	if (led == 1)
 	{
-		/* Pull up to switch off */
-		lpc43_gpio_write(GPIO_LED, true);
+		lpc43_gpio_write(BOARD_LED_OUT, false);
 	}
 }
 
@@ -91,9 +84,9 @@ __EXPORT void led_toggle(int led)
 {
 	if (led == 1)
 	{
-		if (lpc43_gpio_read(GPIO_LED))
-			lpc43_gpio_write(GPIO_LED, false);
+		if (lpc43_gpio_read(BOARD_LED_OUT))
+			lpc43_gpio_write(BOARD_LED_OUT, false);
 		else
-			stm32_gpiowrite(GPIO_LED, true);
+			lpc43_gpio_write(BOARD_LED_OUT, true);
 	}
 }

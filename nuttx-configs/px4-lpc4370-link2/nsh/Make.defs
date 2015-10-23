@@ -38,22 +38,7 @@ include ${TOPDIR}/tools/Config.mk
 include ${TOPDIR}/arch/arm/src/armv7-m/Toolchain.defs
 
 # Setup for the kind of memory that we are executing from
-
-ifeq ($(CONFIG_LPC43_BOOT_SRAM),y)
-  LDSCRIPT = ramconfig.ld
-endif
-ifeq ($(CONFIG_LPC43_BOOT_SPIFI),y)
-  LDSCRIPT = spificonfig.ld
-endif
-ifeq ($(CONFIG_LPC43_BOOT_FLASHA),y)
-  LDSCRIPT = flashaconfig.ld
-endif
-ifeq ($(CONFIG_LPC43_BOOT_FLASHB),y)
-  LDSCRIPT = flashaconfig.ld
-endif
-ifeq ($(CONFIG_LPC43_BOOT_CS0FLASH),y)
-  LDSCRIPT = cs0flash.ld
-endif
+LDSCRIPT = ld.script
 
 CONFIG_ARMV7M_TOOLCHAIN        := GNU_EABI
 

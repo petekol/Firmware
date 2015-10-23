@@ -13,10 +13,11 @@ ROMFS_OPTIONAL_FILES =
 # Board support modules
 #
 MODULES		+= drivers/device
+MODULES		+= drivers/led
+MODULES		+= drivers/boards/px4-lpc4370-link2
 MODULES		+= drivers/mpu9250
-MODULES		+= drivers/hmc5883
 MODULES		+= modules/sensors
-MODULES		+= drivers/mkblctrl
+
 
 #
 # System commands
@@ -27,13 +28,9 @@ MODULES		+= systemcmds/param
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/esc_calib
-MODULES		+= systemcmds/hardfault_log
-MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/nshterm
-MODULES		+= systemcmds/mtd
-MODULES		+= systemcmds/dumpfile
 MODULES		+= systemcmds/ver
 #
 # Library modules
@@ -67,5 +64,4 @@ endef
 #                  command                 priority                   stack  entrypoint
 BUILTIN_COMMANDS := \
 	$(call _B, sercon,                 ,                          2048,  sercon_main                ) \
-	$(call _B, serdis,                 ,                          2048,  serdis_main                ) \
-	$(call _B, cu,                     ,                          2048,  cu_main                    )
+	$(call _B, serdis,                 ,                          2048,  serdis_main                )

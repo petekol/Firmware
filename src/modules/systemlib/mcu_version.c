@@ -66,7 +66,7 @@
 /** Copy the 96bit MCU Unique ID into the provided pointer */
 void mcu_unique_id(uint32_t *uid_96_bit)
 {
-#ifdef __PX4_NUTTX
+#if defined(__PX4_NUTTX) && defined(CONFIG_ARCH_CHIP_STM32)
         uid_96_bit[0] = getreg32(STM32_SYSMEM_UID);
         uid_96_bit[1] = getreg32(STM32_SYSMEM_UID+4);
         uid_96_bit[2] = getreg32(STM32_SYSMEM_UID+8);

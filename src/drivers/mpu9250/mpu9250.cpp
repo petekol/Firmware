@@ -611,7 +611,7 @@ MPU9250::init()
 
 	/* if probe/setup failed, bail now */
 	if (ret != OK) {
-		DEVICE_DEBUG("SPI setup failed");
+		warnx("SPI setup failed");
 		return ret;
 	}
 
@@ -653,7 +653,7 @@ MPU9250::init()
 
 	/* if probe/setup failed, bail now */
 	if (ret != OK) {
-		DEVICE_DEBUG("gyro init failed");
+		warnx("gyro init failed");
 		return ret;
 	}
 
@@ -768,7 +768,7 @@ MPU9250::probe()
 		return OK;
 	}
 
-	DEVICE_DEBUG("unexpected whoami 0x%02x", _whoami);
+	warnx("unexpected whoami 0x%02x", _whoami);
 	return -EIO;
 }
 
@@ -1806,7 +1806,7 @@ MPU9250_gyro::init()
 
 	/* if probe/setup failed, bail now */
 	if (ret != OK) {
-		DEVICE_DEBUG("gyro init failed");
+		warnx("gyro init failed");
 		return ret;
 	}
 

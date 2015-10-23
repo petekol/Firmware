@@ -3,6 +3,7 @@
 #
 
 SRCS		 = px4link2_init.c \
-		   px4link2_led.c
+		   px4link2_led.c \
+		   px4link2_spi.c
 
 MAXOPTIMIZATION	 = -Os

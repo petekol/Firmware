@@ -90,5 +90,7 @@
 #define HW_ARCH "PX4ESC_V1"
 #endif
 
-
+#ifdef CONFIG_ARCH_BOARD_PX4LPC4370_LINK2
+#define HW_ARCH "PX4LPC4370_LINK2"
+#endif
 #endif /* VERSION_H_ */

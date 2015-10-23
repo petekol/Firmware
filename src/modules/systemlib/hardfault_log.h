@@ -36,7 +36,9 @@
  * Included Files
  ****************************************************************************/
 #include <systemlib/px4_macros.h>
+#ifdef CONFIG_ARCH_CHIP_STM32
 #include <stm32_bbsram.h>
+#endif
 
 /****************************************************************************
  * Pre-processor Definitions

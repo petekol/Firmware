@@ -47,20 +47,27 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
+#include <px4_defines.h>
+#include <arch/board/board.h>
+
 __BEGIN_DECLS
 
 /* these headers are not C++ safe */
-#include <stm32.h>
-#include <arch/board/board.h>
+
 
 /****************************************************************************************************
  * Definitions
  ****************************************************************************************************/
 
-#define GPIO_LED       (GPIO_MODE_OUTPUT | GPIO_VALUE_ONE | GPIO_PORT0 | GPIO_PIN8)
+#define BOARD_LED_GPIO		PINCONF_GPIO0p8
+#define BOARD_LED_OUT		(GPIO_MODE_OUTPUT | GPIO_PORT0 | GPIO_PIN8)
 
+/* MPU select is on SSP1 SS*/
+#define BOARD_MPU_CS_GPIO	PINCONF_GPIO0p15
+#define BOARD_MPU_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT0 | GPIO_PIN15)
+
+/* bus 2 is ssp1 */
 #define PX4_SPI_BUS_SENSORS	2
-#define PX4_SPI_BUS_EXT		4
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
 #define PX4_SPIDEV_GYRO		1
@@ -70,10 +77,16 @@ __BEGIN_DECLS
 #define PX4_SPIDEV_HMC		5
 
 /* I2C busses */
-#define PX4_I2C_BUS_EXPANSION	1
 #define PX4_I2C_BUS_ONBOARD	2
 
 #define PX4_I2C_OBDEV_HMC5883	0x1e
+
+// ADC defines to be used in sensors.cpp to read from a particular channel
+#define ADC_BATTERY_VOLTAGE_CHANNEL	2
+#define ADC_BATTERY_CURRENT_CHANNEL	3
+#define ADC_5V_RAIL_SENSE		4
+#define ADC_AIRSPEED_VOLTAGE_CHANNEL	15
+
 
 /****************************************************************************************************
  * Public Types
@@ -97,9 +110,8 @@ __BEGIN_DECLS
  *
  ****************************************************************************************************/
 
-extern void stm32_spiinitialize(void);
+extern void lpc43_spiinitialize(void);
 
-extern void stm32_usbinitialize(void);
 
 #endif /* __ASSEMBLY__ */
 

@@ -51,101 +51,46 @@
 #include <arch/board/board.h>
 
 #include <chip.h>
-#include <lpc43_gpio.h>
+#include "lpc43_gpio.h"
+#include "lpc43_pinconfig.h"
+#include "lpc43_ssp.h"
+
+#include <px4_defines.h>
+
 #include "board_config.h"
+
+
 
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
 
 /************************************************************************************
- * Name: stm32_spiinitialize
+ * Name: lpc43_spiinitialize
  *
  * Description:
- *   Called to configure SPI chip select GPIO pins for the PX4FMU board.
+ *   Called to configure SPI chip select GPIO pins.
  *
  ************************************************************************************/
 
-__EXPORT void lpc43_spiinitialize(void)
-{
-	stm32_configgpio(GPIO_SPI_CS_GYRO);
-	stm32_configgpio(GPIO_SPI_CS_ACCEL_MAG);
-	stm32_configgpio(GPIO_SPI_CS_BARO);
-	stm32_configgpio(GPIO_SPI_CS_HMC);
-	stm32_configgpio(GPIO_SPI_CS_MPU);
+__EXPORT void lpc43_spiinitialize(void) {
 
-	/* De-activate all peripherals,
-	 * required for some peripheral
-	 * state machines
-	 */
-	stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_HMC, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
+	lpc43_pin_config(BOARD_MPU_CS_GPIO);
+	lpc43_gpio_config(BOARD_MPU_CS_OUT);
 
-	stm32_configgpio(GPIO_EXTI_GYRO_DRDY);
-	stm32_configgpio(GPIO_EXTI_MAG_DRDY);
-	stm32_configgpio(GPIO_EXTI_ACCEL_DRDY);
-	stm32_configgpio(GPIO_EXTI_MPU_DRDY);
+	/* deselect all */
+	lpc43_gpio_write(BOARD_MPU_CS_OUT, true);
 }
 
-__EXPORT void stm32_ssp1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
-{
+__EXPORT void lpc43_ssp1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid,
+		bool selected) {
 	/* SPI select is active low, so write !selected to select the device */
 
-	switch (devid) {
-	case PX4_SPIDEV_GYRO:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_GYRO, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_HMC, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-		break;
+	lpc43_gpio_write(BOARD_MPU_CS_OUT, (devid == PX4_SPIDEV_MPU)?!selected:true  );
 
-	case PX4_SPIDEV_ACCEL_MAG:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_HMC, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-		break;
-
-	case PX4_SPIDEV_BARO:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_HMC, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-		break;
-
-	case PX4_SPIDEV_HMC:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_HMC, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
-		break;
-
-	case PX4_SPIDEV_MPU:
-		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_GYRO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_ACCEL_MAG, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_BARO, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_HMC, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MPU, !selected);
-		break;
-
-	default:
-		break;
-	}
 }
 
-__EXPORT uint8_t stm32_ssp1status(FAR struct spi_dev_s *dev, enum spi_dev_e devid)
-{
-	return SPI_STATUS_PRESENT;
+__EXPORT uint8_t lpc43_ssp1status(FAR struct spi_dev_s *dev,
+		enum spi_dev_e devid) {
+	return ((devid == PX4_SPIDEV_MPU)?SPI_STATUS_PRESENT:0);
 }

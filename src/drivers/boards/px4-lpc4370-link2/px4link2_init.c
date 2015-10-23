@@ -31,51 +31,20 @@
  *
  ****************************************************************************/
 
-/**
- * @file px4fmu2_init.c
- *
- * PX4FMUv2-specific early startup code.  This file implements the
- * board_app_initialize() function that is called early by nsh during startup.
- *
- * Code here is run before the rcS script is invoked; it should start required
- * subsystems and perform board-specific initialization.
- */
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <px4_config.h>
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <debug.h>
-#include <errno.h>
-
-#include <nuttx/arch.h>
 #include <nuttx/board.h>
 #include <nuttx/spi/spi.h>
-#include <nuttx/i2c.h>
-#include <nuttx/sdio.h>
-#include <nuttx/mmcsd.h>
-#include <nuttx/analog/adc.h>
-#include <nuttx/mm/gran.h>
+
+#include <px4_config.h>
+#include <drivers/drv_led.h>
+#include <systemlib/cpuload.h>
+#include <errno.h>
 
 #include "board_config.h"
-
-#include <arch/board/board.h>
-
-#include <drivers/drv_hrt.h>
-#include <drivers/drv_led.h>
-
-#include <systemlib/px4_macros.h>
-#include <systemlib/cpuload.h>
-#include <systemlib/perf_counter.h>
-
-#include <systemlib/hardfault_log.h>
-
-#include <systemlib/systemlib.h>
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -87,7 +56,7 @@
 
 #ifdef CONFIG_CPP_HAVE_VARARGS
 #  ifdef CONFIG_DEBUG
-#    define message(...) lowsyslog(__VA_ARGS__)
+#    define message(...) lowsyslog(1,__VA_ARGS__)
 #  else
 #    define message(...) printf(__VA_ARGS__)
 #  endif
@@ -98,6 +67,12 @@
 #    define message printf
 #  endif
 #endif
+
+__BEGIN_DECLS
+extern void led_init(void);
+extern void led_on(int led);
+extern void led_off(int led);
+__END_DECLS
 
 /****************************************************************************
  * Protected Functions
@@ -116,9 +91,6 @@
 __EXPORT void lpc43_boardinitialize(void) {
 	/* configure SPI interfaces */
 	lpc43_spiinitialize();
-
-	/* configure LEDs */
-	board_led_initialize();
 }
 
 /****************************************************************************
@@ -129,7 +101,7 @@ __EXPORT void lpc43_boardinitialize(void) {
  *
  ****************************************************************************/
 
-static struct spi_dev_s *spi2;
+static struct spi_dev_s *spi_sens;
 
 __EXPORT int board_app_initialize(void) {
 
@@ -152,20 +124,22 @@ __EXPORT int board_app_initialize(void) {
 	cpuload_initialize_once();
 #endif
 
+	drv_led_start();
+
 	/* Configure SPI-based devices */
 
-	spi2 = up_spiinitialize(2);
+	spi_sens = up_spiinitialize(PX4_SPI_BUS_SENSORS);
 
-	if (!spi2) {
-		message("[boot] FAILED to initialize SPI port 2\n");
-		board_led_on(LED_AMBER);
+	if (!spi_sens) {
+		message("[boot] FAILED to initialize SPI port for sensors\n");
+		led_on(LED_AMBER);
 		return -ENODEV;
 	}
 
-	SPI_SETFREQUENCY(spi2, 1 * 1000 * 1000);
-	SPI_SETBITS(spi2, 8);
-	SPI_SETMODE(spi2, SPIDEV_MODE3);
-	SPI_SELECT(spi2, SPIDEV_FLASH, false);
+	SPI_SETFREQUENCY(spi_sens, 1 * 1000 * 1000);
+	SPI_SETBITS(spi_sens, 8);
+	SPI_SETMODE(spi_sens, SPIDEV_MODE3);
+	SPI_SELECT(spi_sens, SPIDEV_FLASH, false);
 
 	return OK;
 }

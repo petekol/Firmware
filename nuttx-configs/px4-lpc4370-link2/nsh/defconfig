@@ -1,4 +1,4 @@
-	#
+#
 # Automatically generated file; DO NOT EDIT.
 # Nuttx/ Configuration
 #
@@ -387,6 +387,7 @@ CONFIG_ARCH_HAVE_I2CRESET=y
 CONFIG_I2C=y
 CONFIG_I2C_RESET=y
 CONFIG_SPI=y
+CONFIG_SPI_EXCHANGE=y
 # CONFIG_I2S is not set
 # CONFIG_RTC is not set
 # CONFIG_WATCHDOG is not set

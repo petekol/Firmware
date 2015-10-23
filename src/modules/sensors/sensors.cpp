@@ -46,6 +46,8 @@
  * @author Anton Babushkin <anton@px4.io>
  */
 
+#include <board_config.h>
+
 #include <px4_config.h>
 #include <px4_tasks.h>
 #include <px4_posix.h>
