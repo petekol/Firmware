@@ -13,6 +13,7 @@ ROMFS_OPTIONAL_FILES =
 # Board support modules
 #
 MODULES		+= drivers/device
+MODULES		+= drivers/lpc43xx
 MODULES		+= drivers/led
 MODULES		+= drivers/boards/px4-lpc4370-link2
 MODULES		+= drivers/mpu9250
