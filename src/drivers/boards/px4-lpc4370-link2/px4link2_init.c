@@ -41,6 +41,7 @@
 
 #include <px4_config.h>
 #include <drivers/drv_led.h>
+#include <drivers/drv_hrt.h>
 #include <systemlib/cpuload.h>
 #include <errno.h>
 
