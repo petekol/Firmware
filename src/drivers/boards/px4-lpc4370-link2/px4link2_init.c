@@ -41,6 +41,7 @@
 
 #include <px4_config.h>
 #include <drivers/drv_led.h>
+#include <drivers/drv_hrt.h>
 #include <systemlib/cpuload.h>
 #include <errno.h>
 
@@ -124,10 +125,14 @@ __EXPORT int board_app_initialize(void) {
 	cpuload_initialize_once();
 #endif
 
+	message("[boot] hrt timer...\n");
+	hrt_init(); /* hrt timer */
+
+	message("[boot] led...\n");
 	drv_led_start();
 
 	/* Configure SPI-based devices */
-
+	message("[boot] spi %d...\n",PX4_SPI_BUS_SENSORS);
 	spi_sens = up_spiinitialize(PX4_SPI_BUS_SENSORS);
 
 	if (!spi_sens) {
@@ -136,10 +141,13 @@ __EXPORT int board_app_initialize(void) {
 		return -ENODEV;
 	}
 
+
 	SPI_SETFREQUENCY(spi_sens, 1 * 1000 * 1000);
 	SPI_SETBITS(spi_sens, 8);
 	SPI_SETMODE(spi_sens, SPIDEV_MODE3);
-	SPI_SELECT(spi_sens, SPIDEV_FLASH, false);
+
+	/* deselect all on the bus*/
+	SPI_SELECT(spi_sens, PX4_SPIDEV_MPU, false);
 
 	return OK;
 }
