@@ -66,6 +66,12 @@ __BEGIN_DECLS
 #define BOARD_MPU_CS_GPIO	PINCONF_GPIO0p15
 #define BOARD_MPU_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT0 | GPIO_PIN15)
 
+#define BOARD_MAG_CS_GPIO	PINCONF_GPIO5p9
+#define BOARD_MAG_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT5 | GPIO_PIN9)
+
+#define BOARD_BARO_CS_GPIO	PINCONF_GPIO5p8
+#define BOARD_BARO_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT5 | GPIO_PIN8)
+
 /* bus 2 is ssp1 */
 #define PX4_SPI_BUS_SENSORS	2
 
@@ -84,7 +90,8 @@ __BEGIN_DECLS
 /* I2C busses */
 #define PX4_I2C_BUS_ONBOARD	2
 
-#define PX4_I2C_OBDEV_HMC5883	0x1e
+//#define PX4_I2C_OBDEV_HMC5883	0x1e
+//#define PX4_I2C_OBDEV_BMP280 	0x3b
 
 // ADC defines to be used in sensors.cpp to read from a particular channel
 #define ADC_BATTERY_VOLTAGE_CHANNEL	2
@@ -108,7 +115,7 @@ __BEGIN_DECLS
  ****************************************************************************************************/
 
 /****************************************************************************************************
- * Name: stm32_spiinitialize
+ * Name: lpc43_spiinitialize
  *
  * Description:
  *   Called to configure SPI chip select GPIO pins for the PX4FMU board.

@@ -131,8 +131,10 @@ __EXPORT int board_app_initialize(void) {
 	message("[boot] led...\n");
 	drv_led_start();
 
+
+#ifdef PX4_SPI_BUS_SENSORS
 	/* Configure SPI-based devices */
-	message("[boot] spi %d...\n",PX4_SPI_BUS_SENSORS);
+	message("[boot] spi bus %d...\n",PX4_SPI_BUS_SENSORS);
 	spi_sens = up_spiinitialize(PX4_SPI_BUS_SENSORS);
 
 	if (!spi_sens) {
@@ -148,6 +150,12 @@ __EXPORT int board_app_initialize(void) {
 
 	/* deselect all on the bus*/
 	SPI_SELECT(spi_sens, PX4_SPIDEV_MPU, false);
+	SPI_SELECT(spi_sens, PX4_SPIDEV_BARO, false);
+	SPI_SELECT(spi_sens, PX4_SPIDEV_HMC, false);
+#endif
+
+#ifdef PX4_I2C_BUS_ONBOARD
+#endif
 
 	return OK;
 }
