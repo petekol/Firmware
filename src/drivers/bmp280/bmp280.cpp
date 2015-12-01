@@ -212,19 +212,19 @@ BMP280::init()
 	_class_instance = register_class_devname(BARO_BASE_DEVICE_PATH);
 
 	/* reset sensor */
-	_interface->set_reg(BPM280_ADDR_RESET,BPM280_VALUE_RESET);
+	_interface->set_reg(BPM280_VALUE_RESET,BPM280_ADDR_RESET);
 	usleep(10000);
 
 	/* check  id*/
 	if ( _interface->get_reg(BPM280_ADDR_ID) != BPM280_VALUE_ID ) {
-		debug("id of baro is not: " + BPM280_VALUE_ID);
+		warnx("id of your baro is not: 0x%02x",BPM280_VALUE_ID);
 		return -EIO;
 	}
 
 	/* set config, recommended settings */
-	_interface->set_reg(BPM280_ADDR_CTRL,BPM280_CTRL_P16 | BPM280_CTRL_T2);
+	_interface->set_reg(BPM280_CTRL_P16 | BPM280_CTRL_T2,BPM280_ADDR_CTRL);
 	_max_mesure_ticks = USEC2TICK( BPM280_MT_INIT + BPM280_MT*(16-1 + 2-1) );
-	_interface->set_reg(BPM280_ADDR_CONFIG,BPM280_CONFIG_F16);
+	_interface->set_reg(BPM280_CONFIG_F16,BPM280_ADDR_CONFIG);
 
 	/* get calibration and pre process them*/
 	_cal = _interface->get_calibration(BPM280_ADDR_CAL);
@@ -471,7 +471,7 @@ BMP280::measure()
 	perf_begin(_measure_perf);
 
 	/* start measure */
-	int ret = _interface->set_reg(BPM280_ADDR_CTRL, BPM280_CTRL_MODE_FORCE);
+	int ret = _interface->set_reg(BPM280_CTRL_MODE_FORCE,BPM280_ADDR_CTRL);
 
 	if ( ret != OK) {
 		perf_count(_comms_errors);
@@ -575,9 +575,9 @@ BMP280::print_info()
 	perf_print_counter(_buffer_overflows);
 	printf("poll interval:  %u us \n", _report_ticks * USEC_PER_TICK);
 	_reports->print_info("report queue");
-	printf("P Pa:              %.3f\n", (double)_P);
-	printf("T:              %.3f\n", (double)_T);
-	printf("MSL pressure Pa:   %10.4f\n", (double)(_msl_pressure));
+	printf("P Pa:              %.3f\n", _P);
+	printf("T:              %.3f\n", _T);
+	printf("MSL pressure Pa:   %u\n", _msl_pressure);
 
 }
 
@@ -735,9 +735,9 @@ test(enum BMP280_BUS busid)
 		err(1, "immediate read failed");
 
 	warnx("single read");
-	warnx("pressure:    %10.4f", (double)report.pressure);
-	warnx("altitude:    %11.4f", (double)report.altitude);
-	warnx("temperature: %8.4f", (double)report.temperature);
+	warnx("pressure:    %10.4f", report.pressure);
+	warnx("altitude:    %11.4f", report.altitude);
+	warnx("temperature: %8.4f", report.temperature);
 	warnx("time:        %lld", report.timestamp);
 
 	/* set the queue depth to 10 */
@@ -767,9 +767,9 @@ test(enum BMP280_BUS busid)
 			err(1, "periodic read failed");
 
 		warnx("periodic read %u", i);
-		warnx("pressure:    %10.4f", (double)report.pressure);
-		warnx("altitude:    %11.4f", (double)report.altitude);
-		warnx("temperature K: %8.4f", (double)report.temperature);
+		warnx("pressure:    %10.4f", report.pressure);
+		warnx("altitude:    %11.4f", report.altitude);
+		warnx("temperature K: %8.4f", report.temperature);
 		warnx("time:        %lld", report.timestamp);
 	}
 
@@ -871,11 +871,11 @@ calibrate(unsigned altitude, enum BMP280_BUS busid)
 	const float g  = 9.80665f;	/* gravity constant in m/s/s */
 	const float R  = 287.05f;	/* ideal gas constant in J/kg/K */
 
-	warnx("averaged pressure %10.4fkPa at %um", (double)pressure, altitude);
+	warnx("averaged pressure %10.4fkPa at %um", pressure, altitude);
 
 	p1 = pressure * (powf(((T1 + (a * (float)altitude)) / T1), (g / (a * R))));
 
-	warnx("calculated MSL pressure %10.4fkPa", (double)p1);
+	warnx("calculated MSL pressure %10.4fkPa", p1);
 
 	/* save as integer Pa */
 	p1 *= 1000.0f;
