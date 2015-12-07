@@ -1,9 +1,9 @@
 #
-# Makefile for the px4-lpc4370-link2_default configuration
+# Makefile for the px4-lpc4337-ws_default configuration
 #
 
 #
-# Use the configuration's ROMFS, copy the px4-lpc4370-link2 firmware into
+# Use the configuration's ROMFS, copy the px4-lpc4337-ws firmware into
 # the ROMFS if it's available
 #
 ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_test
@@ -15,8 +15,9 @@ ROMFS_OPTIONAL_FILES =
 MODULES		+= drivers/device
 MODULES		+= drivers/lpc43xx
 MODULES		+= drivers/led
-MODULES		+= drivers/boards/px4-lpc4370-link2
+MODULES		+= drivers/boards/px4-lpc4337-ws
 MODULES		+= drivers/mpu9250
+MODULES		+= drivers/hmc5883
 MODULES		+= modules/sensors
 
 
@@ -29,7 +30,6 @@ MODULES		+= systemcmds/param
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/esc_calib
-MODULES		+= systemcmds/top
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/ver

@@ -163,15 +163,15 @@
 static struct sq_queue_s	callout_queue;
 
 /* latency baseline (last compare value applied) */
-static uint16_t			latency_baseline;
+static uint32_t			latency_baseline;
 
 /* timer count at interrupt (for latency purposes) */
-static uint16_t			latency_actual;
+static uint32_t			latency_actual;
 
 /* latency histogram */
 #define LATENCY_BUCKET_COUNT 8
-__EXPORT const uint16_t latency_bucket_count = LATENCY_BUCKET_COUNT;
-__EXPORT const uint16_t	latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
+__EXPORT const uint32_t latency_bucket_count = LATENCY_BUCKET_COUNT;
+__EXPORT const uint32_t	latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
 __EXPORT uint32_t		latency_counters[LATENCY_BUCKET_COUNT + 1];
 
 
@@ -218,7 +218,7 @@ hrt_tim_init(void)
 	putreg32(TMR_MCR_MRI, HRT_TIMER_BASE+LPC43_TMR_MCR_OFFSET); /* only interrupt, no stop and reset */
 
 	putreg32(0, HRT_TIMER_BASE+LPC43_TMR_CCR_OFFSET); /* do not use capture */
-	putreg32(0, HRT_TIMER_BASE+LPC43_TMR_CTCR_OFFSET); /* counter/timer mode */
+	putreg32(TMR_CTCR_MODE_TIMER, HRT_TIMER_BASE+LPC43_TMR_CTCR_OFFSET); /* counter mode */
 
 
 	putreg32(HRT_COUNTER_PERIOD/2, LPC43_TMR_MR); /* set an initial match a little ways off */
@@ -242,29 +242,24 @@ hrt_tim_init(void)
 static int
 hrt_tim_isr(int irq, void *context)
 {
-	uint32_t status;
+	irqstate_t flags = irqsave();
+
+	/* ack the interrupts we just read */
+	putreg32( TMR_IR_MR , HRT_TIMER_BASE+LPC43_TMR_IR_OFFSET);
 
 	/* grab the timer for latency tracking purposes */
 	latency_actual = getreg32(HRT_TIMER_BASE+LPC43_TMR_TC_OFFSET);
 
-	/* copy interrupt status */
-	status = getreg32(HRT_TIMER_BASE+LPC43_TMR_IR_OFFSET);
+	/* do latency calculations */
+	hrt_latency_update();
 
-	/* ack the interrupts we just read */
-	putreg32(HRT_TIMER_BASE+LPC43_TMR_IR_OFFSET,status);
+	/* run any callouts that have met their deadline */
+	hrt_call_invoke();
 
-	/* was this a timer tick? */
-	if (status & TMR_IR_MR) {
+	/* and schedule the next interrupt */
+	hrt_call_reschedule();
 
-		/* do latency calculations */
-		hrt_latency_update();
-
-		/* run any callouts that have met their deadline */
-		hrt_call_invoke();
-
-		/* and schedule the next interrupt */
-		hrt_call_reschedule();
-	}
+	irqrestore(flags);
 
 	return OK;
 }
@@ -286,8 +281,8 @@ hrt_absolute_time(void)
 	 * pair.  Discourage the compiler from moving loads/stores
 	 * to these outside of the protected range.
 	 */
-	static volatile hrt_abstime base_time;
-	static volatile uint32_t last_count;
+	static volatile hrt_abstime base_time = 0;
+	static volatile uint32_t last_count = 0;
 
 	/* prevent re-entry */
 	flags = irqsave();
@@ -596,7 +591,7 @@ hrt_call_reschedule()
 static void
 hrt_latency_update(void)
 {
-	uint16_t latency = latency_actual - latency_baseline;
+	uint32_t latency = latency_actual - latency_baseline;
 	unsigned	index;
 
 	/* bounded buckets */

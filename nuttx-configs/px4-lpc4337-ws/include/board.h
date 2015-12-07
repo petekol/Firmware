@@ -111,13 +111,13 @@
 #define LPC43_CCLK                  BOARD_FCLKOUT_FREQUENCY
 
 #if defined(CONFIG_LPC43_BUS) || defined(CONFIG_LPC43_MCPWM) || defined(CONFIG_LPC43_I2C0) || defined(CONFIG_LPC43_I2S0) || defined(CONFIG_LPC43_I2S1)  || defined(CONFIG_LPC43_CAN1)
-#  define BOARD_ABP1_CLKSRC			BASE_APB1_CLKSEL_XTAL
+#  define BOARD_ABP1_CLKSRC			BASE_APB_CLKSEL_XTAL
 #  define BOARD_ABP1_FREQUENCY		BOARD_XTAL_FREQUENCY
 #endif
 
 
 #if defined(CONFIG_LPC43_BUS) || defined(CONFIG_LPC43_I2C1) || defined(CONFIG_LPC43_DAC) || defined(CONFIG_LPC43_ADC0) || defined(CONFIG_LPC43_ADC1)  || defined(CONFIG_LPC43_CAN0)
-#  define BOARD_ABP3_CLKSRC			BASE_APB3_CLKSEL_XTAL
+#  define BOARD_ABP3_CLKSRC			BASE_APB_CLKSEL_XTAL
 #  define BOARD_ABP3_FREQUENCY		BOARD_XTAL_FREQUENCY
 #endif
 
@@ -167,6 +167,27 @@
 #  define BOARD_SPIFI_FREQUENCY     (102000000) /* 204MHz / 14 = 14.57MHz */
 #endif
 
+#if CONFIG_SPIFI_LIBRARY
+#  define SPIFI_DEVICE_ALL                0		/**< Enables all devices in family */
+#  define SPIFI_DEVICE_S25FL016K          0		/**< Enables Spansion S25FL016K device */
+#  define SPIFI_DEVICE_S25FL032P          0		/**< Enables Spansion S25FL032P device */
+#  define SPIFI_DEVICE_S25FL064P          0		/**< Enables Spansion S25FL064P device */
+#  define SPIFI_DEVICE_S25FL129P_64K      0		/**< Enables Spansion S25FL129P (64K block) device */
+#  define SPIFI_DEVICE_S25FL129P_256K     0		/**< Enables Spansion S25FL129P (256K block) device */
+#  define SPIFI_DEVICE_S25FL164K          0		/**< Enables Spansion S25FL164K device */
+#  define SPIFI_DEVICE_S25FL256S_64K      0		/**< Enables Spansion S25FL256S (64K block) device */
+#  define SPIFI_DEVICE_S25FL256S_256K     0		/**< Enables Spansion S25FL256S (256K block) device */
+#  define SPIFI_DEVICE_S25FL512S          0		/**< Enables Spansion S25FL512S device */
+#  define SPIFI_DEVICE_MX25L1635E         0		/**< Enables Macronix MX25L1635E device */
+#  define SPIFI_DEVICE_MX25L3235E         0		/**< Enables Macronix MX25L3235E device */
+#  define SPIFI_DEVICE_MX25L8035E         0		/**< Enables Macronix MX25L8035E device */
+#  define SPIFI_DEVICE_MX25L6435E         0		/**< Enables Macronix MX25L6435E device */
+#  define SPIFI_DEVICE_W25Q32FV           0		/**< Enables Winbond W25Q32FV device */
+#  define SPIFI_DEVICE_W25Q64FV           0		/**< Enables Winbond W25Q32V device */
+#  define SPIFI_DEVICE_W25Q80BV           1		/**< Enables Winbond W25Q80BV device */
+#  define SPIFI_DEVICE_REQUENCY_DIVIDER   2		/* PLL1 clock divider */
+#endif
+
 /* UART clocking ***********************************************************/
 /* Configure all U[S]ARTs to use the XTAL input frequency */
 
@@ -207,13 +228,13 @@
 /* 
  *  LED1   K2  GPIO0[8]
  *
- * LED index values for use with lpc43_setled()
+ * LED index values for use with board_userled()
  */
 
 #define BOARD_LED        0
 #define BOARD_NLEDS      1
 
-/* LED bits for use with lpc43_setleds() */
+/* LED bits for use with board_userled_all() */
 
 #define BOARD_LED_BIT    (1 << BOARD_LED)
 
@@ -223,9 +244,9 @@
  * control of the application.  The following interfaces are then available
  * for application control of the LEDs:
  *
- *  void lpc43_ledinit(void);
- *  void lpc43_setled(int led, bool ledon);
- *  void lpc43_setleds(uint8_t ledset);
+ *  void board_userled_initialize(void);
+ *  void board_userled(int led, bool ledon);
+ *  void board_userled_all(uint8_t ledset);
  */
                                       /* LED      */
 #define LED_STARTED                0  /* OFF      */
@@ -264,10 +285,9 @@
 #define PINCONF_I2C1_SDA PINCONF_I2C1_SDA_1
 
 //SSP1 pins
-#define PINCONF_SSP1_MISO PINCONF_SSP1_MISO_3
-#define PINCONF_SSP1_MOSI PINCONF_SSP1_MOSI_3
-#define PINCONF_SSP1_SCK  PINCONF_SSP1_SCK_1
-#define PINCONF_SSP1_SSEL PINCONF_SSP1_SSEL_1
+#define PINCONF_SSP1_MISO PINCONF_SSP1_MISO_1
+#define PINCONF_SSP1_MOSI PINCONF_SSP1_MOSI_1
+#define PINCONF_SSP1_SCK  PINCONF_SSP1_SCK_2
 
 
 /****************************************************************************
@@ -283,7 +303,8 @@
 #undef EXTERN
 #if defined(__cplusplus)
 #define EXTERN extern "C"
-extern "C" {
+extern "C"
+{
 #else
 #define EXTERN extern
 #endif
@@ -302,23 +323,7 @@ extern "C" {
  *
  ****************************************************************************/
 
-EXTERN void lpc43_boardinitialize(void);
-
-/****************************************************************************
- * Name:  lpc43_ledinit, lpc43_setled, and lpc43_setleds
- *
- * Description:
- *   If CONFIG_ARCH_LEDS is defined, then NuttX will control the on-board
- *   LEDs.  If CONFIG_ARCH_LEDS is not defined, then the following interfaces
- *   are available to control the LEDs from user applications.
- *
- ****************************************************************************/
-
-#ifndef CONFIG_ARCH_LEDS
-EXTERN void lpc43_ledinit(void);
-EXTERN void lpc43_setled(int led, bool ledon);
-EXTERN void lpc43_setleds(uint8_t ledset);
-#endif
+void lpc43_boardinitialize(void);
 
 #undef EXTERN
 #if defined(__cplusplus)
