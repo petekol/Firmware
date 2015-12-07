@@ -148,6 +148,7 @@ __EXPORT int board_app_initialize(void) {
 
 	/* deselect all on the bus*/
 	SPI_SELECT(spi_sens, PX4_SPIDEV_MPU, false);
+	SPI_SELECT(spi_sens, PX4_SPIDEV_HMC, false);
 
 	return OK;
 }

@@ -34,7 +34,7 @@
 /**
  * @file board_config.h
  *
- * PX4Link2 internal definitions
+ * PX4_WS internal definitions
  */
 
 #pragma once
@@ -66,6 +66,9 @@ __BEGIN_DECLS
 #define BOARD_MPU_CS_GPIO	PINCONF_GPIO0p15
 #define BOARD_MPU_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT0 | GPIO_PIN15)
 
+#define BOARD_MAG_CS_GPIO	PINCONF_GPIO1p12
+#define BOARD_MAG_CS_OUT	(GPIO_MODE_OUTPUT | GPIO_PORT1 | GPIO_PIN12) // 13 for baro
+
 /* bus 2 is ssp1 */
 #define PX4_SPI_BUS_SENSORS	2
 
@@ -83,8 +86,6 @@ __BEGIN_DECLS
 
 /* I2C busses */
 #define PX4_I2C_BUS_ONBOARD	2
-
-#define PX4_I2C_OBDEV_HMC5883	0x1e
 
 // ADC defines to be used in sensors.cpp to read from a particular channel
 #define ADC_BATTERY_VOLTAGE_CHANNEL	2

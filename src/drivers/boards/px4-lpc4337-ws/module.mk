@@ -1,9 +1,7 @@
 #
-# Board-specific startup code for the PX4-STM32F4Discovery
+# Board-specific startup code
 #
 
-SRCS		 = px4link2_init.c \
-		   px4link2_led.c \
-		   px4link2_spi.c
-
-MAXOPTIMIZATION	 = -Os
+SRCS		 = px4ws_init.c \
+		   px4ws_led.c \
+		   px4ws_spi.c
