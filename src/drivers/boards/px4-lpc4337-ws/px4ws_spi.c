@@ -81,10 +81,13 @@ __EXPORT void lpc43_spiinitialize(void) {
 	lpc43_pin_config(BOARD_MAG_CS_GPIO);
 	lpc43_gpio_config(BOARD_MAG_CS_OUT);
 
+	lpc43_pin_config(BOARD_BARO_CS_GPIO);
+	lpc43_gpio_config(BOARD_BARO_CS_OUT);
 
 	/* deselect all */
 	lpc43_gpio_write(BOARD_MPU_CS_OUT, true);
 	lpc43_gpio_write(BOARD_MAG_CS_OUT, true);
+	lpc43_gpio_write(BOARD_BARO_CS_OUT, true);
 }
 
 __EXPORT void lpc43_ssp1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid,
@@ -93,12 +96,15 @@ __EXPORT void lpc43_ssp1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid,
 
 	lpc43_gpio_write(BOARD_MPU_CS_OUT, (devid == PX4_SPIDEV_MPU)?!selected:true  );
 	lpc43_gpio_write(BOARD_MAG_CS_OUT, (devid == PX4_SPIDEV_HMC)?!selected:true  );
+	lpc43_gpio_write(BOARD_BARO_CS_OUT, (devid == PX4_SPIDEV_BARO)?!selected:true  );
+
 }
 
 __EXPORT uint8_t lpc43_ssp1status(FAR struct spi_dev_s *dev,
 		enum spi_dev_e devid) {
 	return ((devid == PX4_SPIDEV_MPU ||
-			 devid == PX4_SPIDEV_HMC
+			 devid == PX4_SPIDEV_HMC ||
+			 devid == PX4_SPIDEV_BARO
 			)?SPI_STATUS_PRESENT:0);
 }
 
