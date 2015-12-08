@@ -129,6 +129,7 @@ public:
 	enum FrameType {
 		FRAME_PLUS = 0,
 		FRAME_X,
+		FRAME_XC,
 	};
 
 	MK(int bus, const char *_device_path);
@@ -138,6 +139,7 @@ public:
 	virtual int	init(unsigned motors);
 	virtual ssize_t	write(file *filp, const char *buffer, size_t len);
 
+	int		start();
 	int		set_motor_count(unsigned count);
 	int		set_motor_test(bool motortest);
 	int		set_overrideSecurityChecks(bool overrideSecurityChecks);
@@ -146,6 +148,7 @@ public:
 	unsigned int		mk_check_for_blctrl(unsigned int count, bool showOutput, bool initI2C);
 	void		set_rc_min_value(unsigned value);
 	void		set_rc_max_value(unsigned value);
+	void		set_write_only(bool value);
 
 private:
 	static const unsigned	_max_actuators = MAX_MOTORS;
@@ -172,6 +175,7 @@ private:
 	bool					_indicate_esc;
 	unsigned				_rc_min_value;
 	unsigned				_rc_max_value;
+	bool					_write_only;
 	param_t					_param_indicate_esc;
 	actuator_controls_s 	_controls;
 	MotorData_t 			Motor[MAX_MOTORS];
@@ -205,6 +209,8 @@ const int blctrlAddr_quad_x[] = { 2, 2, -2, -2, 0, 0, 0, 0 };		// Addresstransla
 const int blctrlAddr_hexa_x[] = { 2, 4, -2, 0, -3, -1, 0, 0 };		// Addresstranslator for Hexa X configuration
 const int blctrlAddr_octo_x[] = { 1, 4, 0, 1, -4, 1, 1, -4 };		// Addresstranslator for Octo X configuration
 
+const int blctrlAddr_quad_xc[] = { 1, 2, -2, -1, 0, 0, 0, 0 };		// Addresstranslator for Quad XC configuration
+
 const int blctrlAddr_px4[]  = { 0, 0, 0, 0, 0, 0, 0, 0};			// Native PX4 order - nothing to translate
 
 int addrTranslator[] = {0, 0, 0, 0, 0, 0, 0, 0};					// work copy
@@ -236,7 +242,8 @@ MK::MK(int bus, const char *_device_path) :
 	_mixers(nullptr),
 	_indicate_esc(false),
 	_rc_min_value(RC_MIN_VALUE),
-	_rc_max_value(RC_MAX_VALUE)
+	_rc_max_value(RC_MAX_VALUE),
+	_write_only(true)
 {
 	strncpy(_device, _device_path, sizeof(_device));
 	/* enforce null termination */
@@ -280,7 +287,6 @@ MK::init(unsigned motors)
 	_num_outputs = motors;
 	debugCounter = 0;
 	int ret;
-	ASSERT(_task == -1);
 
 	ret = I2C::init();
 
@@ -301,13 +307,22 @@ MK::init(unsigned motors)
 
 	}
 
+
+
+	return OK;
+}
+
+
+int MK::start() {
+	ASSERT(_task == -1);
+
 	/* start the IO interface task */
-	_task = px4_task_spawn_cmd("mkblctrl",
-			       SCHED_DEFAULT,
-			       SCHED_PRIORITY_MAX - 20,
-			       1500,
-			       (main_t)&MK::task_main_trampoline,
-			       nullptr);
+		_task = px4_task_spawn_cmd("mkblctrl",
+					   SCHED_DEFAULT,
+					   SCHED_PRIORITY_MAX - 20,
+					   1500,
+					   (main_t)&MK::task_main_trampoline,
+					   nullptr);
 
 
 	if (_task < 0) {
@@ -344,6 +359,12 @@ MK::set_rc_min_value(unsigned value)
 }
 
 void
+MK::set_write_only(bool value)
+{
+	_write_only = value;
+}
+
+void
 MK::set_rc_max_value(unsigned value)
 {
 	_rc_max_value = value;
@@ -371,6 +392,8 @@ MK::set_motor_count(unsigned count)
 
 				} else if (_frametype == FRAME_X) {
 					memcpy(&addrTranslator, &blctrlAddr_quad_x, sizeof(blctrlAddr_quad_x));
+				} else if (_frametype == FRAME_XC) {
+					memcpy(&addrTranslator, &blctrlAddr_quad_xc, sizeof(blctrlAddr_quad_xc));
 				}
 
 			} else if (_num_outputs == 6) {
@@ -497,8 +520,6 @@ MK::task_main()
 	fds[1].fd = _t_actuator_armed;
 	fds[1].events = POLLIN;
 
-	up_pwm_servo_set_rate(_update_rate);	/* unnecessary ? */
-
 	log("starting");
 
 	/* loop until killed */
@@ -612,7 +633,7 @@ MK::task_main()
 				esc.esc[i].esc_rpm = (uint16_t) 0;
 				esc.esc[i].esc_setpoint = (float) Motor[i].SetPoint_PX4;
 
-				if (Motor[i].Version == 1) {
+				if (Motor[i].Version == BLCTRL_NEW) {
 					// BLCtrl 2.0 (11Bit)
 					esc.esc[i].esc_setpoint_raw = (uint16_t)(Motor[i].SetPoint << 3) | Motor[i].SetPointLowerBits;
 				} else {
@@ -643,10 +664,6 @@ MK::task_main()
 
 	::close(_t_actuators);
 	::close(_t_actuator_armed);
-
-
-	/* make sure servos are off */
-	up_pwm_servo_deinit();
 
 	log("stopping");
 
@@ -699,18 +716,26 @@ MK::mk_check_for_blctrl(unsigned int count, bool showOutput, bool initI2C)
 
 		set_address(BLCTRL_BASE_ADDR + i);
 
-		if (OK == transfer(&msg, 1, &result[0], 3)) {
-			Motor[i].Current = result[0];
-			Motor[i].MaxPWM = result[1];
-			Motor[i].Temperature = result[2];
-			Motor[i].State |= MOTOR_STATE_PRESENT_MASK; // set present bit;
-			foundMotorCount++;
-
-			if ((Motor[i].MaxPWM & 252) == 248) {
+		if (_write_only) {
+			if ( OK == transfer(&msg, 1, nullptr, 0) ) {
+				Motor[i].State |= MOTOR_STATE_PRESENT_MASK; // set present bit;
+				foundMotorCount++;
 				Motor[i].Version = BLCTRL_NEW;
+			}
+		} else {
+			if (OK == transfer(&msg, 1, &result[0], 3)) {
+				Motor[i].Current = result[0];
+				Motor[i].MaxPWM = result[1];
+				Motor[i].Temperature = result[2];
+				Motor[i].State |= MOTOR_STATE_PRESENT_MASK; // set present bit;
+				foundMotorCount++;
 
-			} else {
-				Motor[i].Version = BLCTRL_OLD;
+				if ((Motor[i].MaxPWM & 252) == 248) {
+					Motor[i].Version = BLCTRL_NEW;
+
+				} else {
+					Motor[i].Version = BLCTRL_OLD;
+				}
 			}
 		}
 	}
@@ -768,7 +793,7 @@ MK::mk_servo_set(unsigned int chan, short val)
 		*/
 		msg[0] = Motor[chan].SetPoint;
 
-		if (Motor[chan].RoundCount >= 16) {
+		if (Motor[chan].RoundCount >= 16 && !_write_only ) {
 			// on each 16th cyle we read out the status messages from the blctrl
 			if (OK == transfer(&msg[0], 1, &result[0], 2)) {
 				Motor[chan].Current = result[0];
@@ -798,7 +823,7 @@ MK::mk_servo_set(unsigned int chan, short val)
 			bytesToSendBL2 = 1;	// if setpoint lower bits are zero, we send only the higher bits - this saves time
 		}
 
-		if (Motor[chan].RoundCount >= 16) {
+		if (Motor[chan].RoundCount >= 16 && !_write_only ) {
 			// on each 16th cyle we read out the status messages from the blctrl
 			if (OK == transfer(&msg[0], bytesToSendBL2, &result[0], 3)) {
 				Motor[chan].Current = result[0];
@@ -1164,13 +1189,15 @@ enum MappingMode {
 enum FrameType {
 	FRAME_PLUS = 0,
 	FRAME_X,
+	FRAME_XC,
 };
 
 
 int
-mk_new_mode(int motorcount, bool motortest, int px4mode, int frametype, bool overrideSecurityChecks, unsigned rcmin, unsigned rcmax)
+mk_new_mode(int motorcount, bool motortest, int px4mode, int frametype, bool overrideSecurityChecks, unsigned rcmin, unsigned rcmax, bool write_only)
 {
-	int shouldStop = 0;
+
+	g_mk->set_write_only(write_only);
 
 	/* set rc min pulse value */
 	g_mk->set_rc_min_value(rcmin);
@@ -1190,36 +1217,24 @@ mk_new_mode(int motorcount, bool motortest, int px4mode, int frametype, bool ove
 	/* ovveride security checks if enabled */
 	g_mk->set_overrideSecurityChecks(overrideSecurityChecks);
 
-	/* count used motors */
-	do {
-		if (g_mk->mk_check_for_blctrl(8, false, false) != 0) {
-			shouldStop = 4;
-
-		} else {
-			shouldStop++;
-		}
-
-		sleep(1);
-	} while (shouldStop < 3);
-
 	g_mk->set_motor_count(g_mk->mk_check_for_blctrl(8, true, false));
 
 	return OK;
 }
 
 int
-mk_start(unsigned motors, const char *device_path)
+mk_init(unsigned motors, const char *device_path,unsigned bus)
 {
 	int ret;
 
-	// try i2c3 first
-	g_mk = new MK(3, device_path);
+	// try bus from input first
+	g_mk = new MK(bus, device_path);
 
 	if (!g_mk)
 		return -ENOMEM;
 
 	if (OK == g_mk->init(motors)) {
-		warnx("[mkblctrl] scanning i2c3...\n");
+		warnx("[mkblctrl] scanning i2c bus %u...\n",bus);
 		ret = g_mk->mk_check_for_blctrl(8, false, false);
 
 		if (ret > 0) {
@@ -1269,7 +1284,9 @@ mkblctrl_main(int argc, char *argv[])
 	const char *devicepath = "";
 	unsigned rc_min_value = RC_MIN_VALUE;
 	unsigned rc_max_value = RC_MAX_VALUE;
+	unsigned bus = 3;
 	char *ep;
+	bool write_only = false;
 
 	/*
 	 * optional parameters
@@ -1279,13 +1296,14 @@ mkblctrl_main(int argc, char *argv[])
 		/* look for the optional frame parameter */
 		if (strcmp(argv[i], "-mkmode") == 0 || strcmp(argv[i], "--mkmode") == 0) {
 			if (argc > i + 1) {
-				if (strcmp(argv[i + 1], "+") == 0 || strcmp(argv[i + 1], "x") == 0 || strcmp(argv[i + 1], "X") == 0) {
+				if (strcmp(argv[i + 1], "+") == 0 || strcmp(argv[i + 1], "x") == 0 || strcmp(argv[i + 1], "X") == 0 || strcmp(argv[i + 1], "xc") == 0) {
 					px4mode = MAPPING_MK;
 					//newMode = true;
 
 					if (strcmp(argv[i + 1], "+") == 0) {
 						frametype = FRAME_PLUS;
-
+					} if (strcmp(argv[i + 1], "xc") == 0) {
+						frametype = FRAME_XC;
 					} else {
 						frametype = FRAME_X;
 					}
@@ -1329,6 +1347,19 @@ mkblctrl_main(int argc, char *argv[])
 			}
 		}
 
+		if (strcmp(argv[i], "-bus") == 0 ) {
+			if (argc > i + 1) {
+				bus = strtoul(argv[i + 1], &ep, 0);
+				if (*ep != '\0') {
+					errx(1, "bad bus val (-bus)");
+					return 1;
+				}
+			} else {
+				errx(1, "missing value (-bus)");
+				return 1;
+			}
+		}
+
 		/* look for the optional -rc_min parameter */
 		if (strcmp(argv[i], "-rc_min") == 0 ) {
 			if (argc > i + 1) {
@@ -1357,6 +1388,10 @@ mkblctrl_main(int argc, char *argv[])
 			}
 		}
 
+		if (strcmp(argv[i], "-wo") == 0) {
+			write_only = true;
+		}
+
 
 	}
 
@@ -1379,15 +1414,17 @@ mkblctrl_main(int argc, char *argv[])
 
 	if (!motortest) {
 		if (g_mk == nullptr) {
-			if (mk_start(motorcount, devicepath) != OK) {
+			if (mk_init(motorcount, devicepath,bus) != OK) {
 				errx(1, "failed to start the MK-BLCtrl driver");
 			}
 
 			/* parameter set ? */
 			if (newMode) {
 				/* switch parameter */
-				return mk_new_mode(motorcount, motortest, px4mode, frametype, overrideSecurityChecks, rc_min_value, rc_max_value);
+				mk_new_mode(motorcount, motortest, px4mode, frametype, overrideSecurityChecks, rc_min_value, rc_max_value, write_only);
 			}
+
+			g_mk->start();
 
 			exit(0);
 

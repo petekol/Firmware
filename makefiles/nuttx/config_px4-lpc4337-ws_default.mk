@@ -18,6 +18,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/boards/px4-lpc4337-ws
 MODULES		+= drivers/mpu9250
 MODULES		+= drivers/hmc5883
+MODULES		+= drivers/mkblctrl
 MODULES		+= modules/sensors
 
 
