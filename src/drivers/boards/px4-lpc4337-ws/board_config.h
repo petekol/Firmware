@@ -76,9 +76,13 @@ __BEGIN_DECLS
 #define PX4_SPI_BUS_SENSORS	2
 
 /* High-resolution timer */
-#define HRT_TIMER		0	/* use timer0 for the HRT */
-#define HRT_TIMER_CHANNEL	0	/* use capture/compare channel */
+#define HRT_TIMER		0
+#define HRT_TIMER_CHANNEL	0
 
+/* Tone alarm output */
+#define TONE_ALARM_TIMER	1
+#define TONE_ALARM_CHANNEL	0
+#define BOARD_TONE_ALARM_OUT PINCONF_CTOUT4_1
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
 #define PX4_SPIDEV_GYRO		1
@@ -98,6 +102,8 @@ __BEGIN_DECLS
 #define ADC_BATTERY_CURRENT_CHANNEL	3
 #define ADC_5V_RAIL_SENSE		4
 #define ADC_AIRSPEED_VOLTAGE_CHANNEL	15
+
+
 
 
 /****************************************************************************************************

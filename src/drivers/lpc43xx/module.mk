@@ -37,7 +37,7 @@
 # Modules in this directory are compiled for all STM32 targets.
 #
 
-SRCS		= drv_hrt.c
+SRCS		= drv_hrt.c tone_alarm.cpp
 
 INCLUDE_DIRS	+= $(NUTTX_SRC)/arch/arm/src/lpc43xx $(NUTTX_SRC)/arch/arm/src/common
 
