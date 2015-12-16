@@ -1663,8 +1663,10 @@ MavlinkReceiver::receive_thread(void *arg)
 				}
 			}
 
-			/* count received bytes */
-			_mavlink->count_rxbytes(nread);
+			/* count received bytes (nread will be -1 on read error) */
+			if (nread > 0) {
+				_mavlink->count_rxbytes(nread);
+			}
 		}
 	}
 #endif

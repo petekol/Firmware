@@ -1185,7 +1185,7 @@ Mavlink::configure_stream_threadsafe(const char *stream_name, const float rate)
 			usleep(MAIN_LOOP_DELAY / 2);
 		} while (_subscribe_to_stream != nullptr);
 
-		delete s;
+		delete[] s;
 	}
 }
 
@@ -1537,8 +1537,6 @@ Mavlink::task_main(int argc, char *argv[])
 	/* start the MAVLink receiver */
 	_receive_thread = MavlinkReceiver::receive_start(this);
 
-	_task_running = true;
-
 	MavlinkOrbSubscription *param_sub = add_orb_subscription(ORB_ID(parameter_update));
 	uint64_t param_time = 0;
 	MavlinkOrbSubscription *status_sub = add_orb_subscription(ORB_ID(vehicle_status));
@@ -1750,6 +1748,9 @@ Mavlink::task_main(int argc, char *argv[])
 		}
 
 		perf_end(_loop_perf);
+
+		/* confirm task running only once fully initialized */
+		_task_running = true;
 	}
 
 	delete _subscribe_to_stream;
