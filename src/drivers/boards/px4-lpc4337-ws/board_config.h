@@ -59,8 +59,8 @@ __BEGIN_DECLS
  * Definitions
  ****************************************************************************************************/
 
-#define BOARD_LED_GPIO		PINCONF_GPIO0p8
-#define BOARD_LED_OUT		(GPIO_MODE_OUTPUT | GPIO_PORT0 | GPIO_PIN8)
+#define BOARD_LED_GPIO		PINCONF_GPIO5p5
+#define BOARD_LED_OUT		(GPIO_MODE_OUTPUT | GPIO_PORT5 | GPIO_PIN5)
 
 /* MPU select is on SSP1 SS*/
 #define BOARD_MPU_CS_GPIO	PINCONF_GPIO0p15
