@@ -1357,10 +1357,10 @@ Mavlink::task_main(int argc, char *argv[])
 	 * Called via create_task with taskname followed by original argv
 	 *  <name> mavlink start
 	 *
-	 *  Remove all 3
+	 *  Remove all 2
 	 */
-	argc -= 3;
-	argv += 3;
+	argc -= 2;
+	argv += 2;
 #endif
 
 	/* don't exit from getopt loop to leave getopt global variables in consistent state,

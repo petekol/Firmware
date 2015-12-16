@@ -34,13 +34,20 @@ MODULES		+= systemcmds/esc_calib
 MODULES		+= systemcmds/config
 MODULES		+= systemcmds/nshterm
 MODULES		+= systemcmds/ver
+
+#
+# General system control
+#
+MODULES		+= modules/commander
+MODULES		+= modules/mavlink
+
 #
 # Library modules
 #
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
-
+MODULES		+= modules/dataman
 
 #
 # Libraries
@@ -49,6 +56,7 @@ LIBRARIES	+= lib/mathlib/CMSIS
 MODULES		+= lib/mathlib
 MODULES		+= lib/mathlib/math/filter
 MODULES		+= lib/conversion
+MODULES		+= lib/geo
 MODULES		+= platforms/nuttx
 
 #
