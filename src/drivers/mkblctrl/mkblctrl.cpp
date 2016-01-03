@@ -498,7 +498,7 @@ MK::task_main()
 	fds[1].fd = _t_actuator_armed;
 	fds[1].events = POLLIN;
 
-	up_pwm_servo_set_rate(_update_rate);	/* unnecessary ? */
+	//up_pwm_servo_set_rate(_update_rate);	/* unnecessary ? */
 
 	DEVICE_LOG("starting");
 
@@ -651,7 +651,7 @@ MK::task_main()
 
 
 	/* make sure servos are off */
-	up_pwm_servo_deinit();
+	//up_pwm_servo_deinit();
 
 	DEVICE_LOG("stopping");
 

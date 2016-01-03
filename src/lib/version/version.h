@@ -63,6 +63,10 @@
 #define HW_ARCH "PX4_STM32F4DISCOVERY"
 #endif
 
+#ifdef CONFIG_ARCH_BOARD_LPC4337_WS
+#define HW_ARCH "LPC4337-WS"
+#endif
+
 #ifdef CONFIG_ARCH_BOARD_SITL
 #define	HW_ARCH "LINUXTEST"
 #endif

@@ -34,3 +34,9 @@
 [submodule "src/lib/ecl"]
 	path = src/lib/ecl
 	url = https://github.com/PX4/ecl.git
+[submodule "src/lib/eigen"]
+	path = src/lib/eigen
+	url = ../../PX4/eigen.git
+[submodule "unittests/gtest"]
+	path = unittests/gtest
+	url = ../../sjwilks/gtest.git

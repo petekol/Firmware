@@ -487,6 +487,14 @@ function(px4_os_add_flags)
 			-mthumb
 			-march=armv7-m
 			)
+	elseif (${BOARD} STREQUAL "lpc4337-ws")
+		set(cpu_flags
+			-mcpu=cortex-m4
+			-mthumb
+			-march=armv7e-m
+			-mfpu=fpv4-sp-d16
+			-mfloat-abi=hard
+			)
 	endif()
 	list(APPEND c_flags ${cpu_flags})
 	list(APPEND cxx_flags ${cpu_flags})

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2013 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,31 +31,62 @@
  *
  ****************************************************************************/
 
-/**
- * @file board_serial.h
- * Read off the board serial
- *
- * @author Lorenz Meier <lm@inf.ethz.ch>
- * @author David "Buzz" Bussenschutt <davidbuzz@gmail.com>
- *
- */
+#include <px4_config.h>
 
-#include "otp.h"
+#include <stdbool.h>
+
+#include "lpc43_gpio.h"
+#include "lpc43_pinconfig.h"
+
 #include "board_config.h"
-#include "board_serial.h"
 
-int get_board_serial(uint8_t *serialid)
+#include <arch/board/board.h>
+
+#include <px4_defines.h>
+
+/*
+ * Ideally we'd be able to get these from up_internal.h,
+ * but since we want to be able to disable the NuttX use
+ * of leds for system indication at will and there is no
+ * separate switch, we need to build independent of the
+ * CONFIG_ARCH_LEDS configuration switch.
+ */
+__BEGIN_DECLS
+extern void led_init(void);
+extern void led_on(int led);
+extern void led_off(int led);
+extern void led_toggle(int led);
+__END_DECLS
+
+__EXPORT void led_init(void)
 {
-#if !defined(CONFIG_ARCH_BOARD_LPC4337_WS)
-	const volatile uint32_t *udid_ptr = (const uint32_t *)UDID_START;
-	union udid id;
-	val_read((uint32_t *)&id, udid_ptr, sizeof(id));
+	lpc43_pin_config(BOARD_LED_GPIO);
+	lpc43_gpio_config(BOARD_LED_OUT);
+}
 
+__EXPORT void led_on(int led)
+{
+	if (led == 1)
+	{
+		lpc43_gpio_write(BOARD_LED_OUT, true);
+	}
+}
 
-	/* Copy the serial from the chips non-write memory and swap endianess */
-	serialid[0] = id.data[3];   serialid[1] = id.data[2];  serialid[2] = id.data[1];  serialid[3] = id.data[0];
-	serialid[4] = id.data[7];   serialid[5] = id.data[6];  serialid[6] = id.data[5];  serialid[7] = id.data[4];
-	serialid[8] = id.data[11];   serialid[9] = id.data[10];  serialid[10] = id.data[9];  serialid[11] = id.data[8];
-#endif
-	return 0;
+__EXPORT void led_off(int led)
+{
+	if (led == 1)
+	{
+		lpc43_gpio_write(BOARD_LED_OUT, false);
+	}
+}
+
+__EXPORT void led_toggle(int led)
+{
+	if (led == 1)
+	{
+		if (lpc43_gpio_read(BOARD_LED_OUT))
+			lpc43_gpio_write(BOARD_LED_OUT, false);
+		else
+			lpc43_gpio_write(BOARD_LED_OUT, true);
+	}
 }

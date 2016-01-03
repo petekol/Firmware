@@ -1454,13 +1454,15 @@ struct hmc5883_bus_option {
 	uint8_t busnum;
 	HMC5883	*dev;
 } bus_options[] = {
+#ifdef PX4_I2C_OBDEV_HMC5883
 	{ HMC5883_BUS_I2C_EXTERNAL, "/dev/hmc5883_ext", &HMC5883_I2C_interface, PX4_I2C_BUS_EXPANSION, NULL },
-#ifdef PX4_I2C_BUS_ONBOARD
+#  ifdef PX4_I2C_BUS_ONBOARD
 	{ HMC5883_BUS_I2C_INTERNAL, "/dev/hmc5883_int", &HMC5883_I2C_interface, PX4_I2C_BUS_ONBOARD, NULL },
+#  endif
 #endif
 #ifdef PX4_SPIDEV_HMC
 	{ HMC5883_BUS_SPI, "/dev/hmc5883_spi", &HMC5883_SPI_interface, PX4_SPI_BUS_SENSORS, NULL },
-#endif
+#  endif
 };
 #define NUM_BUS_OPTIONS (sizeof(bus_options)/sizeof(bus_options[0]))
 

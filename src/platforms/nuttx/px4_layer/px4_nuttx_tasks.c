@@ -50,8 +50,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifndef CONFIG_ARCH_BOARD_SIM
-#include <stm32_pwr.h>
+#if !defined(CONFIG_ARCH_BOARD_SIM) && !defined(CONFIG_ARCH_BOARD_LPC4337_WS)
+#  include <stm32_pwr.h>
 #endif
 
 #include <systemlib/systemlib.h>
@@ -62,19 +62,21 @@ extern void up_systemreset(void) noreturn_function;
 void
 px4_systemreset(bool to_bootloader)
 {
+#if !defined(CONFIG_ARCH_BOARD_LPC4337_WS)
 	if (to_bootloader) {
-#ifndef CONFIG_ARCH_BOARD_SIM
+#  if !defined(CONFIG_ARCH_BOARD_SIM)
 		stm32_pwr_enablebkp();
-#endif
+#  endif
 
 		/* XXX wow, this is evil - write a magic number into backup register zero */
 		*(uint32_t *)0x40002850 = 0xb007b007;
 	}
 
 	up_systemreset();
-
+#endif
 	/* lock up here */
 	while (true);
+
 }
 
 int px4_task_spawn_cmd(const char *name, int scheduler, int priority, int stack_size, main_t entry, char *const argv[])
