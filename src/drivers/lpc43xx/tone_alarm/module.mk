@@ -32,12 +32,12 @@
 ############################################################################
 
 #
-# STM32 driver support code
-#
-# Modules in this directory are compiled for all STM32 targets.
+# Tone alarm driver
 #
 
-SRCS		= drv_hrt.c
+MODULE_COMMAND	= tone_alarm
+
+SRCS		= tone_alarm.cpp
 
 INCLUDE_DIRS	+= $(NUTTX_SRC)/arch/arm/src/lpc43xx $(NUTTX_SRC)/arch/arm/src/common
 

@@ -14,6 +14,7 @@ ROMFS_OPTIONAL_FILES =
 #
 MODULES		+= drivers/device
 MODULES		+= drivers/lpc43xx
+MODULES		+= drivers/lpc43xx/tone_alarm
 MODULES		+= drivers/led
 MODULES		+= drivers/boards/px4-lpc4337-ws
 MODULES		+= drivers/mpu9250

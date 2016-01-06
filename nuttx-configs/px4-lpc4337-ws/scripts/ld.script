@@ -79,6 +79,7 @@ MEMORY
 OUTPUT_ARCH(arm)
 ENTRY(__start)         /* Treat __start as the anchor for dead code stripping */
 EXTERN(_vectors)       /* Force the vectors to be included in the output */
+EXTERN(abort)
 SECTIONS
 {
 	.text : {
@@ -100,7 +101,7 @@ SECTIONS
 
 	.init_section : {
 		_sinit = ABSOLUTE(.);
-		*(.init_array .init_array.*)
+		KEEP(*(.init_array .init_array.*))
 		_einit = ABSOLUTE(.);
 	} > progmem
 
