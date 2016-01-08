@@ -81,8 +81,8 @@ __BEGIN_DECLS
 
 /* Tone alarm output */
 #define TONE_ALARM_TIMER	1
-#define TONE_ALARM_CHANNEL	0
-#define BOARD_TONE_ALARM_OUT PINCONF_CTOUT4_1
+#define TONE_ALARM_CHANNEL	1
+#define BOARD_TONE_ALARM_OUT PINCONF_T1_MAT1
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
 #define PX4_SPIDEV_GYRO		1

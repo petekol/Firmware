@@ -46,7 +46,10 @@
 #include <drivers/drv_hrt.h>
 #include <systemlib/cpuload.h>
 #include <errno.h>
-
+#include <nuttx/analog/adc.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/boardctl.h>
 #include "board_config.h"
 
 /****************************************************************************
@@ -133,6 +136,8 @@ __EXPORT int nsh_archinitialize(void) {
 	message("[boot] led...\n");
 	drv_led_start();
 
+	message("[boot] adc...\n");
+	boardctl(BOARDIOC_ADCTEST_SETUP, 0);
 
 #ifdef PX4_SPI_BUS_SENSORS
 	/* Configure SPI-based devices */

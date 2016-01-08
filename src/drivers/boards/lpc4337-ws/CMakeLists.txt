@@ -38,6 +38,7 @@ px4_add_module(
 		ws_init.c
 		ws_led.c
 		ws_spi.c
+		ws_adc.c
 	DEPENDS
 		platforms__common
 	)
