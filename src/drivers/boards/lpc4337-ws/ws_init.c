@@ -35,7 +35,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-
+#include <nuttx/board.h>
 #include <nuttx/arch.h>
 #include <nuttx/spi.h>
 #include <arch/board/board.h>
@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/boardctl.h>
+
 #include "board_config.h"
 
 /****************************************************************************
@@ -108,6 +109,19 @@ __EXPORT void lpc43_boardinitialize(void) {
  ****************************************************************************/
 
 static struct spi_dev_s *spi_sens;
+
+/****************************************************************************
+ * Name: board_app_initialize
+ *
+ * Description:
+ *   Perform architecture specific initialization
+ *
+ ****************************************************************************/
+
+__EXPORT int board_app_initialize(void)
+{
+  return OK;
+}
 
 __EXPORT int nsh_archinitialize(void) {
 
