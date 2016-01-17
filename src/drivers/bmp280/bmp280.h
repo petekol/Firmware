@@ -146,6 +146,6 @@ namespace bmp280
 } /* namespace */
 
 /* interface factories */
-extern bmp280::IBMP280* bmp280_spi_interface(uint8_t busnum, uint8_t device, bool external) __attribute__((weak));
-extern bmp280::IBMP280* bmp280_i2c_interface(uint8_t busnum, uint8_t device, bool external) __attribute__((weak));
-typedef bmp280::IBMP280* (*BMP280_constructor)(uint8_t busnum, uint8_t device, bool external);
+extern bmp280::IBMP280* bmp280_spi_interface(uint8_t busnum, uint8_t device, bool external);
+extern bmp280::IBMP280* bmp280_i2c_interface(uint8_t busnum, uint8_t device, bool external);
+typedef bmp280::IBMP280* (*BMP280_constructor)(uint8_t, uint8_t, bool);

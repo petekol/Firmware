@@ -229,21 +229,21 @@ BMP280::init()
 	/* get calibration and pre process them*/
 	_cal = _interface->get_calibration(BPM280_ADDR_CAL);
 
-	_fcal.t1 = (float) _cal->t1 * pow(2, 8);
-	_fcal.t2 = (float) _cal->t2 * pow(2, -18);
-	_fcal.t3 = (float) _cal->t3 * pow(2, -42);
+	_fcal.t1 =  _cal->t1 * powf(2, 8);
+	_fcal.t2 =  _cal->t2 * powf(2, -18);
+	_fcal.t3 =  _cal->t3 * powf(2, -42);
 
-	_fcal.p1 = (float) _cal->p1 * (pow(2, 8) / -100000.0);
-	_fcal.p2 = (float) _cal->p1 * (float) _cal->p2 * (pow(2, -27) / -100000.0);
-	_fcal.p3 = (float) _cal->p1 * (float) _cal->p3 * (pow(2, -47) / -100000.0);
+	_fcal.p1 = _cal->p1 * (powf(2, 8) / -100000.0f);
+	_fcal.p2 = _cal->p1 *  _cal->p2 * (powf(2, -27) / -100000.0f);
+	_fcal.p3 = _cal->p1 *  _cal->p3 * (powf(2, -47) / -100000.0f);
 
-	_fcal.p4 = (float) _cal->p4 * pow(2, 8) - pow(2, 24);
-	_fcal.p5 = (float) _cal->p5 * pow(2, -10);
-	_fcal.p6 = (float) _cal->p6 * pow(2, -27);
+	_fcal.p4 = _cal->p4 * powf(2, 8) - powf(2, 24);
+	_fcal.p5 = _cal->p5 * powf(2, -10);
+	_fcal.p6 = _cal->p6 * powf(2, -27);
 
-	_fcal.p7 = (float) _cal->p7 * pow(2, -4);
-	_fcal.p8 = (float) _cal->p8 * pow(2, -19) + 1.0;
-	_fcal.p9 = (float) _cal->p9 * pow(2, -35);
+	_fcal.p7 = _cal->p7 * powf(2, -4);
+	_fcal.p8 = _cal->p8 * powf(2, -19) + 1.0f;
+	_fcal.p9 = _cal->p9 * powf(2, -35);
 
 	/* do a first measurement cycle to populate reports with valid data */
 	struct baro_report brp;
@@ -496,7 +496,7 @@ BMP280::collect()
 	report.timestamp = hrt_absolute_time();
     report.error_count = perf_event_count(_comms_errors);
 
-    bmp280::data_s* data = _interface->get_data(BPM280_ADDR_CAL);
+    bmp280::data_s* data = _interface->get_data(BPM280_ADDR_DATA);
     if (data == nullptr) {
     	perf_count(_comms_errors);
     	perf_cancel(_sample_perf);
@@ -517,12 +517,9 @@ BMP280::collect()
 	float x1 = (tf * _fcal.p6 + _fcal.p5) * tf + _fcal.p4;
 	float x2 = (tf * _fcal.p3 + _fcal.p2) * tf + _fcal.p1;
 
-	if (x2 == 0.0f) {
-		_P = 0.0f; //check 0 division
-	} else {
-		float pf = ((float) p_raw + x1) / x2;
-		_P = (pf * _fcal.p9 + _fcal.p8) * pf + _fcal.p7;
-	}
+	float pf = ((float) p_raw + x1) / x2;
+	_P = (pf * _fcal.p9 + _fcal.p8) * pf + _fcal.p7;
+
 
 	report.temperature = _T;
 	report.pressure = _P/100; // to mbar
@@ -546,7 +543,7 @@ BMP280::collect()
 	 * h = -------------------------------  + h1
 	 *                   a
 	 */
-	report.altitude = (((pow(pK, (-(a * R) / g))) * T1) - T1) / a;
+	report.altitude = (((powf(pK, (-(a * R) / g))) * T1) - T1) / a;
 
 
 	/* publish it */
@@ -575,8 +572,8 @@ BMP280::print_info()
 	perf_print_counter(_buffer_overflows);
 	printf("poll interval:  %u us \n", _report_ticks * USEC_PER_TICK);
 	_reports->print_info("report queue");
-	printf("P Pa:              %.3f\n", _P);
-	printf("T:              %.3f\n", _T);
+	printf("P Pa:              %.3f\n", (double)_P);
+	printf("T:              %.3f\n", (double)_T);
 	printf("MSL pressure Pa:   %u\n", _msl_pressure);
 
 }
@@ -735,9 +732,9 @@ test(enum BMP280_BUS busid)
 		err(1, "immediate read failed");
 
 	warnx("single read");
-	warnx("pressure:    %10.4f", report.pressure);
-	warnx("altitude:    %11.4f", report.altitude);
-	warnx("temperature: %8.4f", report.temperature);
+	warnx("pressure:    %10.4f", (double)report.pressure);
+	warnx("altitude:    %11.4f", (double)report.altitude);
+	warnx("temperature: %8.4f", (double)report.temperature);
 	warnx("time:        %lld", report.timestamp);
 
 	/* set the queue depth to 10 */
@@ -767,9 +764,9 @@ test(enum BMP280_BUS busid)
 			err(1, "periodic read failed");
 
 		warnx("periodic read %u", i);
-		warnx("pressure:    %10.4f", report.pressure);
-		warnx("altitude:    %11.4f", report.altitude);
-		warnx("temperature K: %8.4f", report.temperature);
+		warnx("pressure:    %10.4f", (double)report.pressure);
+		warnx("altitude:    %11.4f", (double)report.altitude);
+		warnx("temperature K: %8.4f", (double)report.temperature);
 		warnx("time:        %lld", report.timestamp);
 	}
 
@@ -871,11 +868,11 @@ calibrate(unsigned altitude, enum BMP280_BUS busid)
 	const float g  = 9.80665f;	/* gravity constant in m/s/s */
 	const float R  = 287.05f;	/* ideal gas constant in J/kg/K */
 
-	warnx("averaged pressure %10.4fkPa at %um", pressure, altitude);
+	warnx("averaged pressure %10.4fkPa at %um", (double)pressure, altitude);
 
 	p1 = pressure * (powf(((T1 + (a * (float)altitude)) / T1), (g / (a * R))));
 
-	warnx("calculated MSL pressure %10.4fkPa", p1);
+	warnx("calculated MSL pressure %10.4fkPa", (double)p1);
 
 	/* save as integer Pa */
 	p1 *= 1000.0f;
