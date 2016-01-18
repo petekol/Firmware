@@ -104,6 +104,8 @@ public:
 private:
 	bmp280::IBMP280*	_interface;
 
+	uint8_t				_curr_ctrl;
+
 	struct work_s		_work;
 	unsigned			_report_ticks; // 0 - no cycling, otherwise period of sending a report
 	unsigned			_max_mesure_ticks; //ticks needed to measure
@@ -222,7 +224,8 @@ BMP280::init()
 	}
 
 	/* set config, recommended settings */
-	_interface->set_reg(BPM280_CTRL_P16 | BPM280_CTRL_T2,BPM280_ADDR_CTRL);
+	_curr_ctrl = BPM280_CTRL_P16 | BPM280_CTRL_T2;
+	_interface->set_reg(_curr_ctrl,BPM280_ADDR_CTRL);
 	_max_mesure_ticks = USEC2TICK( BPM280_MT_INIT + BPM280_MT*(16-1 + 2-1) );
 	_interface->set_reg(BPM280_CONFIG_F16,BPM280_ADDR_CONFIG);
 
@@ -471,7 +474,7 @@ BMP280::measure()
 	perf_begin(_measure_perf);
 
 	/* start measure */
-	int ret = _interface->set_reg(BPM280_CTRL_MODE_FORCE,BPM280_ADDR_CTRL);
+	int ret = _interface->set_reg(_curr_ctrl | BPM280_CTRL_MODE_FORCE,BPM280_ADDR_CTRL);
 
 	if ( ret != OK) {
 		perf_count(_comms_errors);
