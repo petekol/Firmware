@@ -45,8 +45,8 @@
 #include "board_config.h"
 
 /* SPI protocol address bits */
-#define DIR_READ			(1<<7)
-#define DIR_WRITE			(0<<7)
+#define DIR_READ			(1<<7)  //for set
+#define DIR_WRITE			~(1<<7) //for clear
 
 #if defined(PX4_SPIDEV_BARO) || defined(PX4_SPIDEV_EXT_BARO)
 
@@ -108,19 +108,19 @@ int BMP280_SPI::init() {
 };
 
 uint8_t BMP280_SPI::get_reg(uint8_t addr) {
-	uint8_t cmd[2] = { (uint8_t)(addr|DIR_READ), 0};
+	uint8_t cmd[2] = { (uint8_t)(addr|DIR_READ), 0}; //set MSB bit
 	transfer(&cmd[0],&cmd[0],2);
 
 	return cmd[1];
 }
 
 int BMP280_SPI::set_reg(uint8_t value, uint8_t addr) {
-	uint8_t cmd[2] = { (uint8_t)(addr|DIR_WRITE), value};
+	uint8_t cmd[2] = { (uint8_t)(addr&DIR_WRITE), value}; //clear MSB bit
 	return transfer(&cmd[0],nullptr,2);
 }
 
 bmp280::data_s* BMP280_SPI::get_data(uint8_t addr) {
-	_data.addr = (uint8_t)(addr|DIR_READ);
+	_data.addr = (uint8_t)(addr|DIR_READ); //set MSB bit
 
 	if( transfer((uint8_t *)&_data,(uint8_t *)&_data, sizeof(struct spi_data_s)) == OK) {
 		return &(_data.data);
