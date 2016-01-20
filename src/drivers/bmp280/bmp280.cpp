@@ -232,19 +232,19 @@ BMP280::init()
 	/* get calibration and pre process them*/
 	_cal = _interface->get_calibration(BPM280_ADDR_CAL);
 
-	_fcal.t1 =  _cal->t1 * powf(2, 8);
-	_fcal.t2 =  _cal->t2 * powf(2, -18);
-	_fcal.t3 =  _cal->t3 * powf(2, -42);
+	_fcal.t1 =  _cal->t1 * powf(2,  4 );
+	_fcal.t2 =  _cal->t2 * powf(2, -14);
+	_fcal.t3 =  _cal->t3 * powf(2, -34);
 
-	_fcal.p1 = _cal->p1 * (powf(2, 8) / -100000.0f);
-	_fcal.p2 = _cal->p1 *  _cal->p2 * (powf(2, -27) / -100000.0f);
-	_fcal.p3 = _cal->p1 *  _cal->p3 * (powf(2, -47) / -100000.0f);
+	_fcal.p1 = _cal->p1            * (powf(2,  4 ) / -100000.0f);
+	_fcal.p2 = _cal->p1 * _cal->p2 * (powf(2, -31) / -100000.0f);
+	_fcal.p3 = _cal->p1 * _cal->p3 * (powf(2, -51) / -100000.0f);
 
-	_fcal.p4 = _cal->p4 * powf(2, 8) - powf(2, 24);
-	_fcal.p5 = _cal->p5 * powf(2, -10);
-	_fcal.p6 = _cal->p6 * powf(2, -27);
+	_fcal.p4 = _cal->p4 * powf(2,  4 ) - powf(2, 20);
+	_fcal.p5 = _cal->p5 * powf(2, -14);
+	_fcal.p6 = _cal->p6 * powf(2, -31);
 
-	_fcal.p7 = _cal->p7 * powf(2, -4);
+	_fcal.p7 = _cal->p7 * powf(2, -4 );
 	_fcal.p8 = _cal->p8 * powf(2, -19) + 1.0f;
 	_fcal.p9 = _cal->p9 * powf(2, -35);
 
@@ -513,7 +513,7 @@ BMP280::collect()
     // Temperature
 	float ofs = (float) t_raw - _fcal.t1;
 	float t_fine = (ofs * _fcal.t3 + _fcal.t2) * ofs;
-	_T = t_fine * (1.0f / 5120.0f);
+	_T = t_fine * (1.0f/5120.0f);
 
 	// Pressure
 	float tf = t_fine - 128000.0f;
