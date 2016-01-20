@@ -525,16 +525,16 @@ BMP280::collect()
 
 
 	report.temperature = _T;
-	report.pressure = _P/100; // to mbar
+	report.pressure = _P/100.0f; // to mbar
 
 
 	/* altitude calculations based on http://www.kansasflyer.org/index.asp?nav=Avi&sec=Alti&tab=Theory&pg=1 */
 
 	/* tropospheric properties (0-11km) for standard atmosphere */
-	const float T1 = 15.0 + 273.15;	/* temperature at base height in Kelvin */
-	const float a  = -6.5 / 1000;	/* temperature gradient in degrees per metre */
-	const float g  = 9.80665;	/* gravity constant in m/s/s */
-	const float R  = 287.05;	/* ideal gas constant in J/kg/K */
+	const float T1 = 15.0f + 273.15f;	/* temperature at base height in Kelvin */
+	const float a  = -6.5f / 1000.0f;	/* temperature gradient in degrees per metre */
+	const float g  = 9.80665f;	/* gravity constant in m/s/s */
+	const float R  = 287.05f;	/* ideal gas constant in J/kg/K */
 	float pK = _P / _msl_pressure;
 
 	/*
