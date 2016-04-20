@@ -44,6 +44,7 @@
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/battery_status.h>
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_baro.h>
@@ -51,6 +52,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
+#include <systemlib/battery.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/optical_flow.h>
 #include <v1.0/mavlink_types.h>
@@ -230,10 +232,13 @@ private:
 		_perf_gps(perf_alloc_once(PC_ELAPSED, "sim_gps_delay")),
 		_perf_airspeed(perf_alloc_once(PC_ELAPSED, "sim_airspeed_delay")),
 		_perf_sim_delay(perf_alloc_once(PC_ELAPSED, "sim_network_delay")),
+		_perf_sim_interval(perf_alloc(PC_INTERVAL, "sim_network_interval")),
 		_accel_pub(nullptr),
 		_baro_pub(nullptr),
 		_gyro_pub(nullptr),
 		_mag_pub(nullptr),
+		_flow_pub(nullptr),
+		_battery_pub(nullptr),
 		_initialized(false)
 #ifndef __PX4_QURT
 		,
@@ -270,6 +275,7 @@ private:
 	perf_counter_t _perf_gps;
 	perf_counter_t _perf_airspeed;
 	perf_counter_t _perf_sim_delay;
+	perf_counter_t _perf_sim_interval;
 
 	// uORB publisher handlers
 	orb_advert_t _accel_pub;
@@ -277,8 +283,12 @@ private:
 	orb_advert_t _gyro_pub;
 	orb_advert_t _mag_pub;
 	orb_advert_t _flow_pub;
+	orb_advert_t _battery_pub;
 
 	bool _initialized;
+
+	// Lib used to do the battery calculations.
+	Battery _battery;
 
 	// class methods
 	int publish_sensor_topics(mavlink_hil_sensor_t *imu);

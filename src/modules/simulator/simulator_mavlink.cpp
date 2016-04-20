@@ -119,7 +119,7 @@ void Simulator::pack_actuator_message(mavlink_hil_controls_t &actuator_msg)
 	actuator_msg.throttle = out[3];
 	actuator_msg.aux1 = out[4];
 	actuator_msg.aux2 = out[5];
-	actuator_msg.aux3 = out[6];
+	actuator_msg.aux3 = _actuators.output[6] > PWM_DEFAULT_MIN / 2 ? out[6] : -1.0f;;
 	actuator_msg.aux4 = out[7];
 	actuator_msg.mode = 0; // need to put something here
 	actuator_msg.nav_mode = 0;
@@ -182,7 +182,7 @@ void Simulator::update_sensors(mavlink_hil_sensor_t *imu)
 	mpu.gyro_y = imu->ygyro;
 	mpu.gyro_z = imu->zgyro;
 
-	write_MPU_data((void *)&mpu);
+	write_MPU_data(&mpu);
 	perf_begin(_perf_mpu);
 
 	RawAccelData accel = {};
@@ -190,7 +190,7 @@ void Simulator::update_sensors(mavlink_hil_sensor_t *imu)
 	accel.y = imu->yacc;
 	accel.z = imu->zacc;
 
-	write_accel_data((void *)&accel);
+	write_accel_data(&accel);
 	perf_begin(_perf_accel);
 
 	RawMagData mag = {};
@@ -198,7 +198,7 @@ void Simulator::update_sensors(mavlink_hil_sensor_t *imu)
 	mag.y = imu->ymag;
 	mag.z = imu->zmag;
 
-	write_mag_data((void *)&mag);
+	write_mag_data(&mag);
 	perf_begin(_perf_mag);
 
 	RawBaroData baro = {};
@@ -207,13 +207,13 @@ void Simulator::update_sensors(mavlink_hil_sensor_t *imu)
 	baro.altitude = imu->pressure_alt;
 	baro.temperature = imu->temperature;
 
-	write_baro_data((void *)&baro);
+	write_baro_data(&baro);
 
 	RawAirspeedData airspeed = {};
 	airspeed.temperature = imu->temperature;
 	airspeed.diff_pressure = imu->diff_pressure;
 
-	write_airspeed_data((void *)&airspeed);
+	write_airspeed_data(&airspeed);
 }
 
 void Simulator::update_gps(mavlink_hil_gps_t *gps_sim)
@@ -242,18 +242,56 @@ void Simulator::handle_message(mavlink_message_t *msg, bool publish)
 			mavlink_hil_sensor_t imu;
 			mavlink_msg_hil_sensor_decode(msg, &imu);
 
+			// set temperature to a decent value
+			imu.temperature = 32.0f;
+
 			uint64_t sim_timestamp = imu.time_usec;
 			struct timespec ts;
 			px4_clock_gettime(CLOCK_REALTIME, &ts);
 			uint64_t timestamp = ts.tv_sec * 1000 * 1000 + ts.tv_nsec / 1000;
 
 			perf_set(_perf_sim_delay, timestamp - sim_timestamp);
+			perf_count(_perf_sim_interval);
 
 			if (publish) {
 				publish_sensor_topics(&imu);
 			}
 
 			update_sensors(&imu);
+
+			/* battery */
+			{
+				hrt_abstime now = hrt_absolute_time();
+
+				const float discharge_interval_us = 60 * 1000 * 1000;
+
+				static hrt_abstime batt_sim_start = now;
+
+				float cellcount = 3.0f;
+
+				float vbatt = 4.2f * cellcount;
+				float ibatt = 20.0f;
+
+				vbatt -= (0.5f * cellcount) * ((now - batt_sim_start) / discharge_interval_us);
+
+				if (vbatt < (cellcount * 3.7f)) {
+					vbatt = cellcount * 3.7f;
+				}
+
+				battery_status_s battery_status;
+
+				// TODO: don't hard-code throttle.
+				const float throttle = 0.5f;
+				_battery.updateBatteryStatus(now, vbatt, ibatt, throttle, &battery_status);
+
+				/* lazily publish the battery voltage */
+				if (_battery_pub != nullptr) {
+					orb_publish(ORB_ID(battery_status), _battery_pub, &battery_status);
+
+				} else {
+					_battery_pub = orb_advertise(ORB_ID(battery_status), &battery_status);
+				}
+			}
 		}
 		break;
 
@@ -426,6 +464,13 @@ void Simulator::initializeSensorData()
 
 void Simulator::pollForMAVLinkMessages(bool publish)
 {
+	// set the threads name
+#ifdef __PX4_DARWIN
+	pthread_setname_np("sim_rcv");
+#else
+	pthread_setname_np(pthread_self(), "sim_rcv");
+#endif
+
 	// udp socket data
 	struct sockaddr_in _myaddr;
 	const int _port = UDP_PORT;
@@ -464,20 +509,6 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 	// setup serial connection to autopilot (used to get manual controls)
 	int serial_fd = openUart(PIXHAWK_DEVICE, 115200);
 
-	if (serial_fd < 0) {
-		PX4_INFO("Not using %s for radio control input. Assuming joystick input via MAVLink.", PIXHAWK_DEVICE);
-
-	} else {
-
-		// tell the device to stream some messages
-		char command[] = "\nsh /etc/init.d/rc.usb\n";
-		int w = ::write(serial_fd, command, sizeof(command));
-
-		if (w <= 0) {
-			PX4_WARN("failed to send streaming command to %s", PIXHAWK_DEVICE);
-		}
-	}
-
 	char serial_buf[1024];
 
 	struct pollfd fds[2];
@@ -491,6 +522,9 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 		fds[1].fd = serial_fd;
 		fds[1].events = POLLIN;
 		fd_count++;
+
+	} else {
+		PX4_INFO("Not using %s for radio control input. Assuming joystick input via MAVLink.", PIXHAWK_DEVICE);
 	}
 
 	int len = 0;
@@ -500,20 +534,49 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 	int pret = -1;
 	PX4_INFO("Waiting for initial data on UDP. Please start the flight simulator to proceed..");
 
-	while (pret <= 0) {
+	uint64_t pstart_time = 0;
+
+	bool no_sim_data = true;
+
+	while (!px4_exit_requested() && no_sim_data) {
 		pret = ::poll(&fds[0], fd_count, 100);
+
+		if (fds[0].revents & POLLIN) {
+			if (pstart_time == 0) {
+				pstart_time = hrt_system_time();
+			}
+
+			len = recvfrom(_fd, _buf, sizeof(_buf), 0, (struct sockaddr *)&_srcaddr, &_addrlen);
+			// send hearbeat
+			mavlink_heartbeat_t hb = {};
+			send_mavlink_message(MAVLINK_MSG_ID_HEARTBEAT, &hb, 200);
+
+			if (len > 0) {
+				mavlink_message_t msg;
+				mavlink_status_t udp_status = {};
+
+				for (int i = 0; i < len; i++) {
+					if (mavlink_parse_char(MAVLINK_COMM_0, _buf[i], &msg, &udp_status)) {
+						// have a message, handle it
+						handle_message(&msg, publish);
+
+						if (msg.msgid != 0 && (hrt_system_time() - pstart_time > 5000000)) {
+							PX4_INFO("Got initial simuation data, running sim..");
+							no_sim_data = false;
+						}
+					}
+				}
+			}
+		}
 	}
 
-	PX4_INFO("Found initial message, pret = %d", pret);
+	if (px4_exit_requested()) {
+		return;
+	}
+
 	_initialized = true;
 	// reset system time
 	(void)hrt_reset();
-
-	if (fds[0].revents & POLLIN) {
-		len = recvfrom(_fd, _buf, sizeof(_buf), 0, (struct sockaddr *)&_srcaddr, &_addrlen);
-		PX4_INFO("Sending initial controls message to jMAVSim.");
-		send_controls();
-	}
 
 	// subscribe to topics
 	_actuator_outputs_sub = orb_subscribe_multi(ORB_ID(actuator_outputs), 0);
@@ -523,28 +586,40 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 	pthread_create(&sender_thread, &sender_thread_attr, Simulator::sending_trampoline, NULL);
 	pthread_attr_destroy(&sender_thread_attr);
 
+	mavlink_status_t udp_status = {};
+	mavlink_status_t serial_status = {};
 
-	// set the threads name
-#ifdef __PX4_DARWIN
-	pthread_setname_np("sim_rcv");
-#else
-	pthread_setname_np(pthread_self(), "sim_rcv");
-#endif
+	bool sim_delay = false;
+
+	const unsigned max_wait_ms = 6;
 
 	// wait for new mavlink messages to arrive
 	while (true) {
 
-		pret = ::poll(&fds[0], fd_count, 10);
+		pret = ::poll(&fds[0], fd_count, max_wait_ms);
 
 		//timed out
 		if (pret == 0) {
-			PX4_WARN("mavlink sim timeout for 10 ms");
+			if (!sim_delay) {
+				// we do not want to spam the console by default
+				// PX4_WARN("mavlink sim timeout for %d ms", max_wait_ms);
+				sim_delay = true;
+				hrt_start_delay();
+				px4_sim_start_delay();
+			}
+
 			continue;
+		}
+
+		if (sim_delay) {
+			sim_delay = false;
+			hrt_stop_delay();
+			px4_sim_stop_delay();
 		}
 
 		// this is undesirable but not much we can do
 		if (pret < 0) {
-			PX4_WARN("poll error %d, %d", pret, errno);
+			PX4_WARN("simulator mavlink: poll error %d, %d", pret, errno);
 			// sleep a bit before next try
 			usleep(100000);
 			continue;
@@ -556,10 +631,9 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 
 			if (len > 0) {
 				mavlink_message_t msg;
-				mavlink_status_t status;
 
 				for (int i = 0; i < len; i++) {
-					if (mavlink_parse_char(MAVLINK_COMM_0, _buf[i], &msg, &status)) {
+					if (mavlink_parse_char(MAVLINK_COMM_0, _buf[i], &msg, &udp_status)) {
 						// have a message, handle it
 						handle_message(&msg, publish);
 					}
@@ -573,10 +647,9 @@ void Simulator::pollForMAVLinkMessages(bool publish)
 
 			if (len > 0) {
 				mavlink_message_t msg;
-				mavlink_status_t status;
 
 				for (int i = 0; i < len; ++i) {
-					if (mavlink_parse_char(MAVLINK_COMM_0, serial_buf[i], &msg, &status)) {
+					if (mavlink_parse_char(MAVLINK_COMM_1, serial_buf[i], &msg, &serial_status)) {
 						// have a message, handle it
 						handle_message(&msg, true);
 					}
@@ -713,8 +786,7 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 	*/
 	/* gyro */
 	{
-		struct gyro_report gyro;
-		memset(&gyro, 0, sizeof(gyro));
+		struct gyro_report gyro = {};
 
 		gyro.timestamp = timestamp;
 		gyro.x_raw = imu->xgyro * 1000.0f;
@@ -723,6 +795,8 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 		gyro.x = imu->xgyro;
 		gyro.y = imu->ygyro;
 		gyro.z = imu->zgyro;
+
+		gyro.temperature = imu->temperature;
 
 		if (_gyro_pub == nullptr) {
 			_gyro_pub = orb_advertise(ORB_ID(sensor_gyro), &gyro);
@@ -734,8 +808,7 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 
 	/* accelerometer */
 	{
-		struct accel_report accel;
-		memset(&accel, 0, sizeof(accel));
+		struct accel_report accel = {};
 
 		accel.timestamp = timestamp;
 		accel.x_raw = imu->xacc / mg2ms2;
@@ -744,6 +817,8 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 		accel.x = imu->xacc;
 		accel.y = imu->yacc;
 		accel.z = imu->zacc;
+
+		accel.temperature = imu->temperature;
 
 		if (_accel_pub == nullptr) {
 			_accel_pub = orb_advertise(ORB_ID(sensor_accel), &accel);
@@ -755,8 +830,7 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 
 	/* magnetometer */
 	{
-		struct mag_report mag;
-		memset(&mag, 0, sizeof(mag));
+		struct mag_report mag = {};
 
 		mag.timestamp = timestamp;
 		mag.x_raw = imu->xmag * 1000.0f;
@@ -765,6 +839,8 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 		mag.x = imu->xmag;
 		mag.y = imu->ymag;
 		mag.z = imu->zmag;
+
+		mag.temperature = imu->temperature;
 
 		if (_mag_pub == nullptr) {
 			/* publish to the first mag topic */
@@ -777,8 +853,7 @@ int Simulator::publish_sensor_topics(mavlink_hil_sensor_t *imu)
 
 	/* baro */
 	{
-		struct baro_report baro;
-		memset(&baro, 0, sizeof(baro));
+		struct baro_report baro = {};
 
 		baro.timestamp = timestamp;
 		baro.pressure = imu->abs_pressure;
