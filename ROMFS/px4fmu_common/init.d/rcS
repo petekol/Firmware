@@ -8,12 +8,12 @@
 #
 # Start CDC/ACM serial driver
 #
-sercon
+###############sercon
 
 #
 # Default to auto-start mode.
 #
-set MODE autostart
+set MODE NOautostart
 
 set FRC /fs/microsd/etc/rc.txt
 set FCONFIG /fs/microsd/etc/config.txt
@@ -30,7 +30,7 @@ then
 	# Start playing the startup tune
 	tone_alarm start
 else
-	tone_alarm MBAGP
+	###############tone_alarm MBAGP
 	if mkfatfs /dev/mmcsd0
 	then
 		if mount -t vfat /dev/mmcsd0 /fs/microsd
@@ -62,7 +62,13 @@ if [ $MODE == autostart ]
 then
 	# Try to get an USB console
 	# REBOOTWORK this needs to start after the flight control loop
-	nshterm /dev/ttyACM0 &
+	
+	if ver hwcmp LPC4337-WS
+	then
+		echo "use UART2 for nsh"
+	else
+		nshterm /dev/ttyACM0 &
+	fi
 
 	#
 	# Start the ORB (first app to start)
@@ -825,7 +831,7 @@ fi
 unset TUNE_ERR
 
 # Boot is complete, inform MAVLink app(s) that the system is now fully up and running
-mavlink boot_complete
+########################mavlink boot_complete
 
 # Sensors on the PWM interface bank
 if param compare SENS_EN_LL40LS 1

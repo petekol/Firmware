@@ -261,7 +261,7 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 				stack_size - stack_free,
 				stack_size,
 				system_load.tasks[i].tcb->sched_priority,
-#if CONFIG_ARCH_BOARD_SIM
+#if CONFIG_ARCH_BOARD_SIM || !defined(CONFIG_PRIORITY_INHERITANCE)
 				0);
 #else
 				system_load.tasks[i].tcb->base_priority);

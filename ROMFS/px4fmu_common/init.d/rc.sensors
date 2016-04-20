@@ -101,32 +101,43 @@ else
 		then
 		fi
 	else
-		# FMUv1
-		if mpu6000 start
+		if ver hwcmp LPC4337-WS
 		then
-		fi
-
-		if l3gd20 start
-		then
-		fi
-
-		# MAG selection
-		if param compare SENS_EXT_MAG 2
-		then
-			if hmc5883 -C -I start
+			if hmc5883 start
+			then
+			fi
+			
+			if mpu9250 start
 			then
 			fi
 		else
-			# Use only external as primary
-			if param compare SENS_EXT_MAG 1
+			# FMUv1
+			if mpu6000 start
 			then
-				if hmc5883 -C -X start
+			fi
+
+			if l3gd20 start
+			then
+			fi
+
+			# MAG selection
+			if param compare SENS_EXT_MAG 2
+			then
+				if hmc5883 -C -I start
 				then
 				fi
 			else
-			# auto-detect the primary, prefer external
-				if hmc5883 start
+				# Use only external as primary
+				if param compare SENS_EXT_MAG 1
 				then
+					if hmc5883 -C -X start
+					then
+					fi
+				else
+				# auto-detect the primary, prefer external
+					if hmc5883 start
+					then
+					fi
 				fi
 			fi
 		fi

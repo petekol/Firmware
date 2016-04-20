@@ -103,7 +103,7 @@ __BEGIN_DECLS
 #define ADC_5V_RAIL_SENSE		4
 #define ADC_AIRSPEED_VOLTAGE_CHANNEL	15
 
-
+#define BOARD_DISABLE_LEGACY_ROTATION 1
 
 
 /****************************************************************************************************

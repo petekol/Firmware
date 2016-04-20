@@ -975,6 +975,16 @@ HMC5883::collect()
 		}
 	}
 
+
+#ifdef BOARD_DISABLE_LEGACY_ROTATION
+	new_report.x_raw = report.x;
+	new_report.y_raw = report.y;
+	new_report.z_raw = report.z;
+
+	xraw_f = report.x;
+	yraw_f = report.y;
+	zraw_f = report.z;
+#else
 	/*
 	 * RAW outputs
 	 *
@@ -1005,6 +1015,7 @@ HMC5883::collect()
 	xraw_f = -report.y;
 	yraw_f = report.x;
 	zraw_f = report.z;
+#endif
 
 	// apply user specified rotation
 	rotate_3f(_rotation, xraw_f, yraw_f, zraw_f);

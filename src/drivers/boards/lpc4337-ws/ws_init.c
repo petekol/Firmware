@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/boardctl.h>
+#include <syslog.h>
 
 #include "board_config.h"
 
@@ -63,7 +64,7 @@
 
 #ifdef CONFIG_CPP_HAVE_VARARGS
 #  ifdef CONFIG_DEBUG
-#    define message(...) lowsyslog(1,__VA_ARGS__)
+#    define message(...) lowsyslog("px4 message",__VA_ARGS__)
 #  else
 #    define message(...) printf(__VA_ARGS__)
 #  endif

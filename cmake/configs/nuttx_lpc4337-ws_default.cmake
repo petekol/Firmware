@@ -13,6 +13,7 @@ set(config_module_list
 	drivers/boards/lpc4337-ws
 	drivers/mpu9250
 	drivers/hmc5883
+	drivers/bmp280
 	modules/sensors
 	drivers/mkblctrl
 	#

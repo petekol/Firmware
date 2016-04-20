@@ -1605,7 +1605,7 @@ MPU9250::measure()
 		return;
 	}
 
-
+#ifndef BOARD_DISABLE_LEGACY_ROTATION
 	/*
 	 * Swap axes and negate y
 	 */
@@ -1615,6 +1615,7 @@ MPU9250::measure()
 	int16_t gyro_xt = report.gyro_y;
 	int16_t gyro_yt = ((report.gyro_x == -32768) ? 32767 : -report.gyro_x);
 
+
 	/*
 	 * Apply the swap
 	 */
@@ -1622,6 +1623,7 @@ MPU9250::measure()
 	report.accel_y = accel_yt;
 	report.gyro_x = gyro_xt;
 	report.gyro_y = gyro_yt;
+#endif
 
 	/*
 	 * Report buffers.
