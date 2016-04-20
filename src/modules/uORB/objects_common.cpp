@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2016 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -270,3 +270,27 @@ ORB_DEFINE(distance_sensor, struct distance_sensor_s);
 
 #include "topics/camera_trigger.h"
 ORB_DEFINE(camera_trigger, struct camera_trigger_s);
+
+#include "topics/vehicle_command_ack.h"
+ORB_DEFINE(vehicle_command_ack, struct vehicle_command_ack_s);
+
+#include "topics/ekf2_innovations.h"
+ORB_DEFINE(ekf2_innovations, struct ekf2_innovations_s);
+
+#include "topics/ekf2_replay.h"
+ORB_DEFINE(ekf2_replay, struct ekf2_replay_s);
+
+#include "topics/qshell_req.h"
+ORB_DEFINE(qshell_req, struct qshell_req_s);
+
+#include "topics/mavlink_log.h"
+ORB_DEFINE(mavlink_log, struct mavlink_log_s);
+
+#include "topics/follow_target.h"
+ORB_DEFINE(follow_target, struct follow_target_s);
+
+#include "topics/commander_state.h"
+ORB_DEFINE(commander_state, struct commander_state_s);
+
+#include "topics/transponder_report.h"
+ORB_DEFINE(transponder_report, struct transponder_report_s);

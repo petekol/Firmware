@@ -106,6 +106,7 @@ print("""
  * Tool for listening to topics when running flight stack on linux.
  */
 
+#include <drivers/drv_hrt.h>
 #include <px4_middleware.h>
 #include <px4_app.h>
 #include <px4_config.h>
@@ -125,6 +126,14 @@ print("""
 #define PRId64 "lld"
 #endif
 
+static bool check_timeout(const hrt_abstime& time) {
+    if (hrt_elapsed_time(&time) > 2*1000*1000) {
+		printf("Waited for 2 seconds without a message. Giving up.\\n");
+        return true;
+    }
+    return false;
+}
+
 """)
 for m in messages:
 	print("#include <uORB/topics/%s.h>" % m)
@@ -136,12 +145,12 @@ extern "C" __EXPORT int listener_main(int argc, char *argv[]);
 int listener_main(int argc, char *argv[]) {
 	int sub = -1;
 	orb_id_t ID;
-	if(argc < 3) {
-		printf("need at least two arguments: topic name, number of messages to print\\n");
+	if(argc < 2) {
+		printf("need at least two arguments: topic name. [optional number of messages to print]\\n");
 		return 1;
 	}
 """)
-print("\tunsigned num_msgs = atoi(argv[2]);")
+print("\tunsigned num_msgs = (argc > 2) ? atoi(argv[2]) : 1;")
 print("\tif (strncmp(argv[1],\"%s\",50) == 0) {" % messages[0])
 print("\t\tsub = orb_subscribe(ORB_ID(%s));" % messages[0])
 print("\t\tID = ORB_ID(%s);" % messages[0])
@@ -154,11 +163,15 @@ for index,m in enumerate(messages[1:]):
 	print("\t\tstruct %s_s container;" % m)
 	print("\t\tmemset(&container, 0, sizeof(container));")
 	print("\t\tbool updated;")
-	print("\t\tfor (unsigned i = 0; i < num_msgs; i++) {")
+	print("\t\tunsigned i = 0;")
+	print("\t\thrt_abstime start_time = hrt_absolute_time();")
+	print("\t\twhile(i < num_msgs) {")
 	print("\t\t\torb_check(sub,&updated);")
-	print("\t\t\tupdated = true;")
+	print("\t\t\tif (i == 0) { updated = true; } else { usleep(500); }")
 	print("\t\t\tif (updated) {")
-	print("\t\tprintf(\"\\nTOPIC: %s #%%d\\n\", i);" % m)
+	print("\t\t\tstart_time = hrt_absolute_time();")
+	print("\t\t\ti++;")
+	print("\t\t\tprintf(\"\\nTOPIC: %s #%%d\\n\", i);" % m)
 	print("\t\t\torb_copy(ID,sub,&container);")
 	for item in message_elements[index+1]:
 		if item[0] == "float":
@@ -190,11 +203,21 @@ for index,m in enumerate(messages[1:]):
 		elif item[0] == "int32":
 			print("\t\t\tprintf(\"%s: %%d\\n\",container.%s);" % (item[1], item[1]))
 		elif item[0] == "uint32":
-			print("\t\t\tprintf(\"%s: %%d\\n\",container.%s);" % (item[1], item[1]))
-		elif item[0] == "uint8":
 			print("\t\t\tprintf(\"%s: %%u\\n\",container.%s);" % (item[1], item[1]))
+		elif item[0] == "int16":
+			print("\t\t\tprintf(\"%s: %%d\\n\",(int)container.%s);" % (item[1], item[1]))
+		elif item[0] == "uint16":
+			print("\t\t\tprintf(\"%s: %%u\\n\",(unsigned)container.%s);" % (item[1], item[1]))
+		elif item[0] == "int8":
+			print("\t\t\tprintf(\"%s: %%d\\n\",(int)container.%s);" % (item[1], item[1]))
+		elif item[0] == "uint8":
+			print("\t\t\tprintf(\"%s: %%u\\n\",(unsigned)container.%s);" % (item[1], item[1]))
 		elif item[0] == "bool":
 			print("\t\t\tprintf(\"%s: %%s\\n\",container.%s ? \"True\" : \"False\");" % (item[1], item[1]))
+	print("\t\t\t} else {")
+	print("\t\t\t\tif (check_timeout(start_time)) {")
+	print("\t\t\t\t\tbreak;")
+	print("\t\t\t\t}")
 	print("\t\t\t}")
 	print("\t\t}")
 print("\t} else {")
