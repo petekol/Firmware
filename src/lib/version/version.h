@@ -82,4 +82,9 @@
 #ifdef CONFIG_ARCH_BOARD_RPI2
 #define	HW_ARCH "LINUXTEST"
 #endif
+
+#ifdef CONFIG_ARCH_BOARD_PX4LPC4337_WS
+#define HW_ARCH "PX4LPC4337_WS"
+#endif
+
 #endif /* VERSION_H_ */
