@@ -88,7 +88,7 @@
 #define BLCTRL_BASE_ADDR 				0x29
 #define BLCTRL_OLD 						0
 #define BLCTRL_NEW 						1
-#define BLCTRL_MIN_VALUE				-0.920F
+#define BLCTRL_MIN_VALUE				-0.92f
 #define MOTOR_STATE_PRESENT_MASK		0x80
 #define MOTOR_STATE_ERROR_MASK			0x7F
 #define MOTOR_SPINUP_COUNTER			30
@@ -209,7 +209,7 @@ const int blctrlAddr_quad_x[] = { 2, 2, -2, -2, 0, 0, 0, 0 };		// Addresstransla
 const int blctrlAddr_hexa_x[] = { 2, 4, -2, 0, -3, -1, 0, 0 };		// Addresstranslator for Hexa X configuration
 const int blctrlAddr_octo_x[] = { 1, 4, 0, 1, -4, 1, 1, -4 };		// Addresstranslator for Octo X configuration
 
-const int blctrlAddr_quad_xc[] = { 1, 2, -2, -1, 0, 0, 0, 0 };		// Addresstranslator for Quad XC configuration
+const int blctrlAddr_quad_xc[] = { 0, 1, 1, -2, 0, 0, 0, 0 };		// Addresstranslator for Quad XC configuration
 
 const int blctrlAddr_px4[]  = { 0, 0, 0, 0, 0, 0, 0, 0};			// Native PX4 order - nothing to translate
 
@@ -912,7 +912,7 @@ MK::mk_servo_test(unsigned int chan)
 		val = -1;
 	}
 
-	tmpVal = (511 + (511 * val));
+	tmpVal = (511.0f + (511.0f * val));
 
 	if (tmpVal > 1024) {
 		tmpVal = 1024;
@@ -939,7 +939,7 @@ MK::mk_servo_test(unsigned int chan)
 		ret = transfer(&msg[0], 1, nullptr, 0);
 
 	} else {
-		ret = transfer(&msg[0], 2, nullptr, 0);
+		ret = transfer(&msg[0], 1, nullptr, 0);
 	}
 
 	return ret;
@@ -1423,8 +1423,8 @@ mkblctrl_main(int argc, char *argv[])
 
 	if (showHelp) {
 		fprintf(stderr, "mkblctrl: help:\n");
-		fprintf(stderr, "  [-mkmode {+/x}] [-b i2c_bus_number] [-d devicename] [--override-security-checks] [-h / --help]\n\n");
-		fprintf(stderr, "\t -mkmode {+/x} \t\t Type of frame, if Mikrokopter motor order is used.\n");
+		fprintf(stderr, "  [-mkmode {+/x/xc}] [-bus i2c_bus_number] [-d devicename] [--override-security-checks] [-h / --help] [-wo]\n\n");
+		fprintf(stderr, "\t -mkmode {+/x/xc} \t\t Type of frame, if Mikrokopter motor order is used.\n");
 		fprintf(stderr, "\t -d {devicepath & name}\t\t Create alternate pwm device.\n");
 		fprintf(stderr,
 			"\t --override-security-checks \t\t Disable all security checks (arming and number of ESCs). Used to test single Motors etc. (DANGER !!!)\n");
