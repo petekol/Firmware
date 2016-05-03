@@ -91,9 +91,13 @@
 #define BLCTRL_MIN_VALUE				-0.92f
 #define MOTOR_STATE_PRESENT_MASK		0x80
 #define MOTOR_STATE_ERROR_MASK			0x7F
-#define MOTOR_SPINUP_COUNTER			30
+#define MOTOR_SPINUP_COUNTER			30	//number of sends in motor test every ESC_UORB_PUBLISH_DELAY
 #define MOTOR_LOCATE_DELAY				10000000
-#define ESC_UORB_PUBLISH_DELAY			500000
+#define ESC_UORB_PUBLISH_DELAY			500000 //how often to publish info to ORB
+
+#define ESC_ARM_COUNT					20 //write 0 number of times to arm ESC
+#define ESC_IDLE_LIMIT_US				5000000 //ESC will disarm after this time, should be
+#define ESC_MAX_VALUE					2047 //max value of ESC
 
 #define CONTROL_INPUT_DROP_LIMIT_MS		20
 #define RC_MIN_VALUE					1010
@@ -101,17 +105,18 @@
 
 
 struct MotorData_t {
-	unsigned int Version;                        // the version of the BL (0 = old)
-	unsigned int SetPoint;                       // written by attitude controller
-	unsigned int SetPointLowerBits;      // for higher Resolution of new BLs
-	float SetPoint_PX4; 			     // Values from PX4
-	unsigned int State;                          // 7 bit for I2C error counter, highest bit indicates if motor is present
-	unsigned int ReadMode;                       // select data to read
-	unsigned short RawPwmValue;							// length of PWM pulse
+	unsigned int Version;               // the version of the BL (0 = old)
+	unsigned int SetPoint;              // written by attitude controller
+	unsigned int SetPointLowerBits;     // for higher Resolution of new BLs
+	float SetPoint_PX4; 			    // Values from PX4
+	unsigned int State;                 // 7 bit for I2C error counter, highest bit indicates if motor is present
+	unsigned int ReadMode;              // select data to read
+	hrt_abstime lastWriteTS;			//last write to ESC in ms
+	unsigned short RawPwmValue;			// length of PWM pulse
 	// the following bytes must be exactly in that order!
-	unsigned int Current;                        // in 0.1 A steps, read back from BL
-	unsigned int MaxPWM;                         // read back from BL is less than 255 if BL is in current limit
-	unsigned int Temperature;            // old BL-Ctrl will return a 255 here, the new version the temp. in
+	unsigned int Current;               // in 0.1 A steps, read back from BL
+	unsigned int MaxPWM;                // read back from BL is less than 255 if BL is in current limit
+	unsigned int Temperature;           // old BL-Ctrl will return a 255 here, the new version the temp. in
 	unsigned int RoundCount;
 };
 
@@ -193,6 +198,7 @@ private:
 	int 					mk_servo_set(unsigned int chan, short val);
 	int 					mk_servo_test(unsigned int chan);
 	int 					mk_servo_locate();
+	int 					mk_servo_wakeup(); //send last value to keep motor from idling
 	short					scaling(float val, float inMin, float inMax, float outMin, float outMax);
 	void					play_beep(int count);
 
@@ -546,11 +552,14 @@ MK::task_main()
 			continue;
 		}
 
+		bool servoSet = false;
+
 		/* do we have a control update? */
 		if (fds[0].revents & POLLIN) {
 
 			bool changed = false;
 			orb_check(_t_actuators, &changed);
+
 
 			if (changed) {
 
@@ -600,12 +609,20 @@ MK::task_main()
 						/* output to BLCtrl's */
 						if (_motortest != true && _indicate_esc != true) {
 							Motor[i].SetPoint_PX4 = outputs.output[i];
+							Motor[i].lastWriteTS = outputs.timestamp;
 							mk_servo_set(i, scaling(outputs.output[i], -1.0f, 1.0f, 0,
-										2047));	// scale the output to 0 - 2047 and sent to output routine
+										ESC_MAX_VALUE));	// scale the output to 0 - ESC_MAX_VALUE and sent to output routine
 						}
+
+						servoSet = true;
 					}
 				}
 			}
+		}
+
+		//keep armed if already armed and not set before
+		if ( _armed && !servoSet ) {
+			mk_servo_wakeup();
 		}
 
 		/* how about an arming update? */
@@ -688,8 +705,42 @@ MK::task_main()
 int
 MK::mk_servo_arm(bool status)
 {
+
+	const uint8_t armEscByte = 0;
+	hrt_abstime now = hrt_absolute_time();
+
+	//some ESCs need multiple 0 sends to be armed
+	for (unsigned int i = 0; i < _num_outputs; i++) {
+		//send only if goes in arming
+		if (status) {
+			set_address(BLCTRL_BASE_ADDR + (i + addrTranslator[i]));
+			for (unsigned int j = 0; j < ESC_ARM_COUNT; j++) {
+				transfer(&armEscByte, 1, nullptr, 0);
+			}
+			Motor[i].lastWriteTS = now;
+		}
+		//0 on status change, wakeup uses it
+		Motor[i].SetPoint_PX4 = 0;
+	}
+
 	_armed = status;
-	return 0;
+	return OK;
+}
+
+int
+MK::mk_servo_wakeup() {
+
+	hrt_abstime now = hrt_absolute_time();
+
+	for (unsigned int i = 0; i < _num_outputs; i++) {
+		if ( now - Motor[i].lastWriteTS > ESC_IDLE_LIMIT_US ) {
+			//send prev values
+			mk_servo_set(i, scaling( Motor[i].SetPoint_PX4, -1.0f, 1.0f, 0,ESC_MAX_VALUE));
+			Motor[i].lastWriteTS = now;
+		}
+	}
+
+	return OK;
 }
 
 
@@ -780,8 +831,8 @@ MK::mk_servo_set(unsigned int chan, short val)
 
 	tmpVal = val;
 
-	if (tmpVal > 2047) {
-		tmpVal = 2047;
+	if (tmpVal > ESC_MAX_VALUE) {
+		tmpVal = ESC_MAX_VALUE;
 
 	} else if (tmpVal < 0) {
 		tmpVal = 0;
@@ -1043,7 +1094,7 @@ MK::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 	case PWM_SERVO_SET(0) ... PWM_SERVO_SET(_max_actuators - 1):
 		if (arg < 2150) {
 			Motor[cmd - PWM_SERVO_SET(0)].RawPwmValue = (unsigned short)arg;
-			mk_servo_set(cmd - PWM_SERVO_SET(0), scaling(arg, _rc_min_value, _rc_max_value, 0, 2047));
+			mk_servo_set(cmd - PWM_SERVO_SET(0), scaling(arg, _rc_min_value, _rc_max_value, 0, ESC_MAX_VALUE));
 
 		} else {
 			ret = -EINVAL;
@@ -1191,7 +1242,7 @@ MK::write(file *filp, const char *buffer, size_t len)
 
 	for (uint8_t i = 0; i < count; i++) {
 		Motor[i].RawPwmValue = (unsigned short)values[i];
-		mk_servo_set(i, scaling(values[i], _rc_min_value, _rc_max_value, 0, 2047));
+		mk_servo_set(i, scaling(values[i], _rc_min_value, _rc_max_value, 0, ESC_MAX_VALUE));
 	}
 
 	return count * 2;
