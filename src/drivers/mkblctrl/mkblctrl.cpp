@@ -611,7 +611,7 @@ MK::task_main()
 							Motor[i].SetPoint_PX4 = outputs.output[i];
 							Motor[i].lastWriteTS = outputs.timestamp;
 							mk_servo_set(i, scaling(outputs.output[i], -1.0f, 1.0f, 0,
-										ESC_MAX_VALUE));	// scale the output to 0 - ESC_MAX_VALUE and sent to output routine
+										ESC_MAX_VALUE));	// scale the output to 0 - ESC_MAX_VALUE and send to output routine
 						}
 
 						servoSet = true;
@@ -669,12 +669,12 @@ MK::task_main()
 				esc.esc[i].esc_errorcount = (uint16_t) 0;
 
 				// if motortest is requested - do it... (deprecated in future)
-				if (_motortest == true) {
+				if (_motortest) {
 					mk_servo_test(i);
 				}
 
 				// if esc locate is requested
-				if (_indicate_esc == true) {
+				if (_indicate_esc) {
 					mk_servo_locate();
 				}
 			}
@@ -841,7 +841,7 @@ MK::mk_servo_set(unsigned int chan, short val)
 	Motor[chan].SetPoint = (uint8_t)(tmpVal >> 3) & 0xff;
 	Motor[chan].SetPointLowerBits = ((uint8_t)tmpVal % 8) & 0x07;
 
-	if (_armed == false) {
+	if (!_armed) {
 		Motor[chan].SetPoint = 0;
 		Motor[chan].SetPointLowerBits = 0;
 	}
@@ -909,7 +909,7 @@ MK::mk_servo_set(unsigned int chan, short val)
 	Motor[chan].RoundCount++;
 	//}
 
-	if (showDebug == true) {
+	if (showDebug) {
 		debugCounter++;
 
 		if (debugCounter == 2000) {
