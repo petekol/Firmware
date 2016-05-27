@@ -63,10 +63,20 @@ public:
 	// public interfaces for this class.
 
 	/**
+	 * Initialize the singleton. Call this before everything else.
+	 * @return true on success
+	 */
+	static bool initialize();
+
+	/**
 	 * Method to get the singleton instance for the uORB::Manager.
+	 * Make sure initialize() is called first.
 	 * @return uORB::Manager*
 	 */
-	static uORB::Manager *get_instance();
+	static uORB::Manager *get_instance()
+	{
+		return _Instance;
+	}
 
 	// ==== uORB interface methods ====
 	/**
@@ -131,6 +141,14 @@ public:
 
 
 	/**
+	 * Unadvertise a topic.
+	 *
+	 * @param handle  handle returned by orb_advertise or orb_advertise_multi.
+	 * @return 0 on success
+	 */
+	int orb_unadvertise(orb_advert_t handle);
+
+	/**
 	 * Publish new data to a topic.
 	 *
 	 * The data is atomically published to the topic and any waiting subscribers
@@ -169,9 +187,6 @@ public:
 	 *      for the topic.
 	 * @return    ERROR on error, otherwise returns a handle
 	 *      that can be used to read and update the topic.
-	 *      If the topic in question is not known (due to an
-	 *      ORB_DEFINE_OPTIONAL with no corresponding ORB_DECLARE)
-	 *      this function will return -1 and set errno to ENOENT.
 	 */
 	int  orb_subscribe(const struct orb_metadata *meta) ;
 
