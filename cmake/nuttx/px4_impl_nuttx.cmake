@@ -259,9 +259,10 @@ function(px4_nuttx_add_export)
 	add_custom_target(__nuttx_copy_${CONFIG}
 		DEPENDS nuttx_copy_${CONFIG}.stamp
 	)
+	file(RELATIVE_PATH nuttx_cp_src ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/NuttX)
 	add_custom_command(OUTPUT nuttx_copy_${CONFIG}.stamp
 		COMMAND ${MKDIR} -p ${nuttx_src}
-		COMMAND rsync -a --delete --exclude=.git ${CMAKE_SOURCE_DIR}/NuttX/  ${nuttx_src}/
+		COMMAND rsync -a --delete --exclude=.git ${nuttx_cp_src}/ ${CONFIG}/NuttX/
 		COMMAND ${TOUCH} nuttx_copy_${CONFIG}.stamp
 		DEPENDS ${DEPENDS} ${nuttx_patches}
 		COMMENT "Copying NuttX for ${CONFIG} with ${config_nuttx_config}")
@@ -309,6 +310,7 @@ function(px4_nuttx_add_export)
 		COMMAND ${MAKE} --no-print-directory --quiet -C ${nuttx_src}/nuttx -j${THREADS} -r CONFIG_ARCH_BOARD=${CONFIG} export > nuttx_build.log
 		COMMAND ${CP} -r ${nuttx_src}/nuttx/nuttx-export.zip ${CMAKE_BINARY_DIR}/${CONFIG}.export
 		DEPENDS ${config_files} ${DEPENDS} __nuttx_patch_${CONFIG} ${nuttx_patches}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "Building NuttX for ${CONFIG} with ${config_nuttx_config}")
 
 	# extract
@@ -525,16 +527,6 @@ function(px4_os_add_flags)
 		)
 
 	set(added_exe_linker_flags) # none currently
-
-	set(instrument_flags)
-	if ("${config_nuttx_hw_stack_check_${BOARD}}" STREQUAL "y")
-		set(instrument_flags
-			-finstrument-functions
-			-ffixed-r10
-			)
-		list(APPEND c_flags ${instrument_flags})
-		list(APPEND cxx_flags ${instrument_flags})
-	endif()
 
 	set(cpu_flags)
 	if (${config_nuttx_hw} STREQUAL "m4")
