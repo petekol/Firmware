@@ -51,4 +51,18 @@
 #    define px4_arch_gpiowrite(pinset, value)       stm32_gpiowrite(pinset, value)
 #    define px4_arch_gpiosetevent(pinset,r,f,e,fp)  stm32_gpiosetevent(pinset,r,f, e,fp)
 #  endif
+
+#  if defined(CONFIG_ARCH_CHIP_STM32F7)
+#    define px4_spibus_initialize(port_1based)       stm32_spibus_initialize(port_1based)
+
+#    define px4_i2cbus_initialize(bus_num_1based)    stm32f7_i2cbus_initialize(bus_num_1based)
+#    define px4_i2cbus_uninitialize(pdev)            stm32f7_i2cbus_uninitialize(pdev)
+
+#    define px4_arch_configgpio(pinset)             stm32_configgpio(pinset)
+#    define px4_arch_unconfiggpio(pinset)           stm32_unconfiggpio(pinset)
+#    define px4_arch_gpioread(pinset)               stm32_gpioread(pinset)
+#    define px4_arch_gpiowrite(pinset, value)       stm32_gpiowrite(pinset, value)
+#    define px4_arch_gpiosetevent(pinset,r,f,e,fp)  stm32_gpiosetevent(pinset,r,f, e,fp)
+#  endif
+
 #endif

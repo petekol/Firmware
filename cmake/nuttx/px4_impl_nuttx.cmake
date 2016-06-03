@@ -543,6 +543,11 @@ function(px4_os_add_flags)
 			-mthumb
 			-march=armv7-m
 			)
+	elseif (${config_nuttx_hw} STREQUAL "m7")
+		set(cpu_flags
+			-mcpu=cortex-m7
+			-mthumb
+			)
 	endif()
 	list(APPEND c_flags ${cpu_flags})
 	list(APPEND cxx_flags ${cpu_flags})
