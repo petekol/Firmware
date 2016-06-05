@@ -4,6 +4,7 @@
 [submodule "NuttX"]
 	path = NuttX
 	url = https://github.com/petekol/PX4NuttX.git
+	branch = f7upstream
 [submodule "src/modules/uavcan/libuavcan"]
 	path = src/modules/uavcan/libuavcan
 	url = https://github.com/UAVCAN/libuavcan.git
