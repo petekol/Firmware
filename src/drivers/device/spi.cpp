@@ -45,8 +45,6 @@
  * non-interrupt-mode client.
  */
 
-#include <nuttx/arch.h>
-#include <stm32.h>
 #include "spi.h"
 
 #ifndef CONFIG_SPI_EXCHANGE

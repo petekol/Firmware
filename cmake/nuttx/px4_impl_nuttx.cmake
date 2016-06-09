@@ -547,6 +547,8 @@ function(px4_os_add_flags)
 		set(cpu_flags
 			-mcpu=cortex-m7
 			-mthumb
+			-mfpu=fpv5-sp-d16
+			-mfloat-abi=hard
 			)
 	endif()
 	list(APPEND c_flags ${cpu_flags})

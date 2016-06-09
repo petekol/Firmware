@@ -277,7 +277,7 @@ static struct spi_dev_s *spi2;
 static struct sdio_dev_s *sdio;
 
 
-__EXPORT int board_app_initialize(void)
+__EXPORT int board_app_initialize(uintptr_t arg)
 {
 
 #if defined(CONFIG_HAVE_CXX) && defined(CONFIG_HAVE_CXXINITIALIZE)
@@ -304,23 +304,6 @@ __EXPORT int board_app_initialize(void)
 #ifdef CONFIG_SCHED_INSTRUMENTATION
 	cpuload_initialize_once();
 #endif
-
-	/* set up the serial DMA polling */
-	static struct hrt_call serial_dma_call;
-	struct timespec ts;
-
-	/*
-	 * Poll at 1ms intervals for received bytes that have not triggered
-	 * a DMA event.
-	 */
-	ts.tv_sec = 0;
-	ts.tv_nsec = 1000000;
-
-	hrt_call_every(&serial_dma_call,
-		       ts_to_abstime(&ts),
-		       ts_to_abstime(&ts),
-		       (hrt_callout)stm32_serial_dma_poll,
-		       NULL);
 
 #if defined(CONFIG_STM32_BBSRAM)
 

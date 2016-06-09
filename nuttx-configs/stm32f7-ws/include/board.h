@@ -54,6 +54,7 @@
 #endif
 #endif
 
+	
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
@@ -203,7 +204,10 @@
  *   -- ----- --------- -----
  */
 
-#define GPIO_USART6_RX GPIO_USART6_RX_1
+#define GPIO_USART1_RX	GPIO_USART1_RX_2	/* ESP8266  RC*/
+#define GPIO_USART1_TX	GPIO_USART1_TX_2
+
+#define GPIO_USART6_RX GPIO_USART6_RX_1		/* Terminal */
 #define GPIO_USART6_TX GPIO_USART6_TX_1
 
 #define GPIO_SPI1_SCK  GPIO_SPI1_SCK_1

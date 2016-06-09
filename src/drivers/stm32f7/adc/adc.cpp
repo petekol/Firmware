@@ -60,8 +60,8 @@
 #include <drivers/drv_adc.h>
 
 #include <stm32_gpio.h>
-#include "chip/stm32_tim.h"
-#include "chip/stm32_adc.h"
+#include <stm32_tim.h>
+#include <stm32_adc.h>
 
 #include <systemlib/err.h>
 #include <systemlib/perf_counter.h>

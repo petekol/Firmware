@@ -53,7 +53,7 @@
 
 #include <up_arch.h>
 #include <chip.h>
-#include <stm32.h>
+#include <stm32_spi.h>
 #include "board_config.h"
 #include <systemlib/err.h>
 
@@ -98,7 +98,7 @@ __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid,
 
 }
 
-__EXPORT uint8_t lpc43_ssp1status(FAR struct spi_dev_s *dev,
+__EXPORT uint8_t stm32_spi1status(FAR struct spi_dev_s *dev,
 		enum spi_dev_e devid) {
 	return ((devid == PX4_SPIDEV_MPU ||
 			 devid == PX4_SPIDEV_HMC ||

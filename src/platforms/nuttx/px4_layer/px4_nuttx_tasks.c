@@ -64,6 +64,7 @@ extern void up_systemreset(void) noreturn_function;
 void
 px4_systemreset(bool to_bootloader)
 {
+#if !defined(CONFIG_ARCH_BOARD_STM32F7_WS)
 	if (to_bootloader) {
 		stm32_pwr_enablebkp(true);
 
@@ -71,6 +72,7 @@ px4_systemreset(bool to_bootloader)
 		*(uint32_t *)0x40002850 = 0xb007b007;
 		stm32_pwr_enablebkp(false);
 	}
+#endif
 
 	up_systemreset();
 

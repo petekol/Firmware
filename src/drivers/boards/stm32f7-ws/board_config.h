@@ -49,6 +49,7 @@
 __BEGIN_DECLS
 
 /* these headers are not C++ safe */
+#include <chip/stm32_pinmap.h>
 #include <stm32_gpio.h>
 #include <arch/board/board.h>
 
@@ -92,6 +93,7 @@ __BEGIN_DECLS
 
 #define GPIO_SPI_CS_OFF_MPU9250		_PIN_OFF(GPIO_SPI_CS_MPU9250)
 #define GPIO_SPI_CS_OFF_HMC5983		_PIN_OFF(GPIO_SPI_CS_HMC5983)
+#define GPIO_SPI_CS_OFF_BMP280		_PIN_OFF(GPIO_SPI_CS_BMP280)
 
 #define GPIO_DRDY_OFF_MPU9250		_PIN_OFF(GPIO_DRDY_MPU9250)
 #define GPIO_DRDY_OFF_HMC5983		_PIN_OFF(GPIO_DRDY_HMC5983)
@@ -108,6 +110,7 @@ __BEGIN_DECLS
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
 #define PX4_SPIDEV_GYRO			1
 #define PX4_SPIDEV_ACCEL_MAG	2
+#define PX4_SPIDEV_BARO			3
 #define PX4_SPIDEV_MPU			4
 #define PX4_SPIDEV_HMC			5
 #define PX4_SPIDEV_ICM			6

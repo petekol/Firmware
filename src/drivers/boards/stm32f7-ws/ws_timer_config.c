@@ -41,12 +41,13 @@
 
 #include <stdint.h>
 
-#include <stm32.h>
+#include <chip/stm32_pinmap.h>
 #include <stm32_gpio.h>
 #include <stm32_tim.h>
+#include <stm32_rcc.h>
 
 #include <drivers/drv_pwm_output.h>
-#include <drivers/stm32/drv_io_timer.h>
+#include <drivers/stm32f7/drv_io_timer.h>
 
 #include "board_config.h"
 

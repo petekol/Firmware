@@ -38,7 +38,7 @@ set(config_module_list
 	systemcmds/perf
 	systemcmds/pwm
 	systemcmds/esc_calib
-	systemcmds/hardfault_log
+	# systemcmds/hardfault_log
 	systemcmds/reboot
 	systemcmds/topic_listener
 	systemcmds/top
@@ -54,11 +54,11 @@ set(config_module_list
 	# General system control
 	#
 	modules/commander
-	modules/load_mon
+	# modules/load_mon
 	modules/navigator
 	modules/mavlink
-	modules/gpio_led
-	modules/uavcan
+	# modules/gpio_led
+	# modules/uavcan
 	modules/land_detector
 
 	#
@@ -83,8 +83,8 @@ set(config_module_list
 	#
 	# Logging
 	#
-	modules/sdlog2
-	modules/logger
+	#modules/sdlog2
+	#modules/logger
 
 	#
 	# Library modules
@@ -101,7 +101,7 @@ set(config_module_list
 	lib/controllib
 	lib/mathlib
 	lib/mathlib/math/filter
-	lib/rc
+	#lib/rc
 	lib/ecl
 	lib/external_lgpl
 	lib/geo
@@ -125,8 +125,8 @@ set(config_module_list
 )
 
 set(config_extra_builtin_cmds
-	serdis
-	sercon
+	##serdis
+	##sercon
 	)
 
 set(config_extra_libs
@@ -135,14 +135,14 @@ set(config_extra_libs
 set(config_io_extra_libs
 	)
 
-add_custom_target(sercon)
-set_target_properties(sercon PROPERTIES
-	PRIORITY "SCHED_PRIORITY_DEFAULT"
-	MAIN "sercon"
-	STACK_MAIN "2048")
+##add_custom_target(sercon)
+##set_target_properties(sercon PROPERTIES
+##	PRIORITY "SCHED_PRIORITY_DEFAULT"
+##	MAIN "sercon"
+##	STACK_MAIN "2048")
 
-add_custom_target(serdis)
-set_target_properties(serdis PROPERTIES
-	PRIORITY "SCHED_PRIORITY_DEFAULT"
-	MAIN "serdis"
-	STACK_MAIN "2048")
+##add_custom_target(serdis)
+##set_target_properties(serdis PROPERTIES
+##	PRIORITY "SCHED_PRIORITY_DEFAULT"
+##	MAIN "serdis"
+##	STACK_MAIN "2048")

@@ -45,9 +45,10 @@
 #include <px4_config.h>
 #include <px4_defines.h>
 
-#ifdef CONFIG_ARCH_CHIP_STM32
+#if defined(CONFIG_ARCH_CHIP_STM32) || defined(CONFIG_ARCH_CHIP_STM32F7)
 
-#include <stm32.h>
+#include <chip.h>
+#include <up_arch.h>
 
 //STM DocID018909 Rev 8 Sect 38.18 (MCU device ID code)
 # define REVID_MASK    0xFFFF0000
@@ -55,11 +56,12 @@
 
 # define STM32F40x_41x 0x413
 # define STM32F42x_43x 0x419
-# define STM32F103_LD 0x412
-# define STM32F103_MD 0x410
-# define STM32F103_HD 0x414
+# define STM32F103_LD  0x412
+# define STM32F103_MD  0x410
+# define STM32F103_HD  0x414
 # define STM32F103_XLD 0x430
 # define STM32F103_CON 0x418
+# define STM32F74x_5x  0x449
 
 #endif
 
@@ -113,6 +115,10 @@ int mcu_version(char *rev, char **revstr)
 
 	case STM32F103_CON:
 		*revstr = "STM32F1xx Con";
+		break;
+
+	case STM32F74x_5x:
+		*revstr = "STM32F74x 5x";
 		break;
 
 	default:

@@ -62,9 +62,14 @@
 #include <nuttx/analog/adc.h>
 #include <nuttx/mm/gran.h>
 
-#include <stm32.h>
-#include "board_config.h"
+#include <chip/stm32_pinmap.h>
+#include <stm32_spi.h>
+#include <stm32_i2c.h>
+#include <stm32_gpio.h>
 #include <stm32_uart.h>
+
+#include "board_config.h"
+
 
 #include <arch/board/board.h>
 
@@ -75,8 +80,6 @@
 #include <systemlib/cpuload.h>
 #include <systemlib/perf_counter.h>
 #include <systemlib/err.h>
-
-#include <systemlib/hardfault_log.h>
 
 #include <systemlib/systemlib.h>
 
@@ -273,11 +276,12 @@ stm32_boardinitialize(void)
  ****************************************************************************/
 
 static struct spi_dev_s *spi1;
-static struct spi_dev_s *spi2;
+
+#ifdef CONFIG_MMCSD
 static struct sdio_dev_s *sdio;
+#endif
 
-
-__EXPORT int board_app_initialize(void)
+__EXPORT int board_app_initialize(uintptr_t arg)
 {
 
 #if defined(CONFIG_HAVE_CXX) && defined(CONFIG_HAVE_CXXINITIALIZE)
@@ -305,6 +309,7 @@ __EXPORT int board_app_initialize(void)
 	cpuload_initialize_once();
 #endif
 
+#ifdef SERIAL_HAVE_DMA
 	/* set up the serial DMA polling */
 	static struct hrt_call serial_dma_call;
 	struct timespec ts;
@@ -316,143 +321,13 @@ __EXPORT int board_app_initialize(void)
 	ts.tv_sec = 0;
 	ts.tv_nsec = 1000000;
 
+
 	hrt_call_every(&serial_dma_call,
 		       ts_to_abstime(&ts),
 		       ts_to_abstime(&ts),
 		       (hrt_callout)stm32_serial_dma_poll,
 		       NULL);
-
-#if defined(CONFIG_STM32_BBSRAM)
-
-	/* NB. the use of the console requires the hrt running
-	 * to poll the DMA
-	 */
-
-	/* Using Battery Backed Up SRAM */
-
-	int filesizes[CONFIG_STM32_BBSRAM_FILES + 1] = BSRAM_FILE_SIZES;
-
-	stm32_bbsraminitialize(BBSRAM_PATH, filesizes);
-
-#if defined(CONFIG_STM32_SAVE_CRASHDUMP)
-
-	/* Panic Logging in Battery Backed Up Files */
-
-	/*
-	 * In an ideal world, if a fault happens in flight the
-	 * system save it to BBSRAM will then reboot. Upon
-	 * rebooting, the system will log the fault to disk, recover
-	 * the flight state and continue to fly.  But if there is
-	 * a fault on the bench or in the air that prohibit the recovery
-	 * or committing the log to disk, the things are too broken to
-	 * fly. So the question is:
-	 *
-	 * Did we have a hard fault and not make it far enough
-	 * through the boot sequence to commit the fault data to
-	 * the SD card?
-	 */
-
-	/* Do we have an uncommitted hard fault in BBSRAM?
-	 *  - this will be reset after a successful commit to SD
-	 */
-	int hadCrash = hardfault_check_status("boot");
-
-	if (hadCrash == OK) {
-
-		message("[boot] There is a hard fault logged. Hold down the SPACE BAR," \
-			" while booting to halt the system!\n");
-
-		/* Yes. So add one to the boot count - this will be reset after a successful
-		 * commit to SD
-		 */
-
-		int reboots = hardfault_increment_reboot("boot", false);
-
-		/* Also end the misery for a user that holds for a key down on the console */
-
-		int bytesWaiting;
-		ioctl(fileno(stdin), FIONREAD, (unsigned long)((uintptr_t) &bytesWaiting));
-
-		if (reboots > 2 || bytesWaiting != 0) {
-
-			/* Since we can not commit the fault dump to disk. Display it
-			 * to the console.
-			 */
-
-			hardfault_write("boot", fileno(stdout), HARDFAULT_DISPLAY_FORMAT, false);
-
-			message("[boot] There were %d reboots with Hard fault that were not committed to disk - System halted %s\n",
-				reboots,
-				(bytesWaiting == 0 ? "" : " Due to Key Press\n"));
-
-
-			/* For those of you with a debugger set a break point on up_assert and
-			 * then set dbgContinue = 1 and go.
-			 */
-
-			/* Clear any key press that got us here */
-
-			static volatile bool dbgContinue = false;
-			int c = '>';
-
-			while (!dbgContinue) {
-
-				switch (c) {
-
-				case EOF:
-
-
-				case '\n':
-				case '\r':
-				case ' ':
-					continue;
-
-				default:
-
-					putchar(c);
-					putchar('\n');
-
-					switch (c) {
-
-					case 'D':
-					case 'd':
-						hardfault_write("boot", fileno(stdout), HARDFAULT_DISPLAY_FORMAT, false);
-						break;
-
-					case 'C':
-					case 'c':
-						hardfault_rearm("boot");
-						hardfault_increment_reboot("boot", true);
-						break;
-
-					case 'B':
-					case 'b':
-						dbgContinue = true;
-						break;
-
-					default:
-						break;
-					} // Inner Switch
-
-					message("\nEnter B - Continue booting\n" \
-						"Enter C - Clear the fault log\n" \
-						"Enter D - Dump fault log\n\n?>");
-					fflush(stdout);
-
-					if (!dbgContinue) {
-						c = getchar();
-					}
-
-					break;
-
-				} // outer switch
-			} // for
-
-		} // inner if
-	} // outer if
-
-#endif // CONFIG_STM32_SAVE_CRASHDUMP
-#endif // CONFIG_STM32_BBSRAM
+#endif
 
 	/* initial LED state */
 	drv_led_start();
@@ -479,27 +354,6 @@ __EXPORT int board_app_initialize(void)
 	SPI_SELECT(spi1, PX4_SPIDEV_MPU, false);
 	up_udelay(20);
 
-	/* Get the SPI port for the FRAM */
-
-	spi2 = stm32_spibus_initialize(2);
-
-	if (!spi2) {
-		message("[boot] FAILED to initialize SPI port 2\n");
-		board_autoled_on(LED_RED);
-		return -ENODEV;
-	}
-
-	/* Default SPI2 to 12MHz and de-assert the known chip selects.
-	 * MS5611 has max SPI clock speed of 20MHz
-	 */
-
-	// XXX start with 10.4 MHz and go up to 20 once validated
-	SPI_SETFREQUENCY(spi2, 20 * 1000 * 1000);
-	SPI_SETBITS(spi2, 8);
-	SPI_SETMODE(spi2, SPIDEV_MODE3);
-	SPI_SELECT(spi2, SPIDEV_FLASH, false);
-	SPI_SELECT(spi2, PX4_SPIDEV_BARO, false);
-
 #ifdef CONFIG_MMCSD
 	/* First, get an instance of the SDIO interface */
 
@@ -525,158 +379,4 @@ __EXPORT int board_app_initialize(void)
 #endif
 
 	return OK;
-}
-
-static void copy_reverse(stack_word_t *dest, stack_word_t *src, int size)
-{
-	while (size--) {
-		*dest++ = *src--;
-	}
-}
-
-__EXPORT void board_crashdump(uintptr_t currentsp, FAR void *tcb, FAR const uint8_t *filename, int lineno)
-{
-	/* We need a chunk of ram to save the complete context in.
-	 * Since we are going to reboot we will use &_sdata
-	 * which is the lowest memory and the amount we will save
-	 * _should be_ below any resources we need herein.
-	 * Unfortunately this is hard to test. See dead below
-	 */
-
-	fullcontext_s *pdump = (fullcontext_s *)&_sdata;
-
-	(void)enter_critical_section();
-
-	struct tcb_s *rtcb = (struct tcb_s *)tcb;
-
-	/* Zero out everything */
-
-	memset(pdump, 0, sizeof(fullcontext_s));
-
-	/* Save Info */
-
-	pdump->info.lineno = lineno;
-
-	if (filename) {
-
-		int offset = 0;
-		unsigned int len = strlen((char *)filename) + 1;
-
-		if (len > sizeof(pdump->info.filename)) {
-			offset = len - sizeof(pdump->info.filename) ;
-		}
-
-		strncpy(pdump->info.filename, (char *)&filename[offset], sizeof(pdump->info.filename));
-	}
-
-	/* Save the value of the pointer for current_regs as debugging info.
-	 * It should be NULL in case of an ASSERT and will aid in cross
-	 * checking the validity of system memory at the time of the
-	 * fault.
-	 */
-
-	pdump->info.current_regs = (uintptr_t) CURRENT_REGS;
-
-	/* Save Context */
-
-
-#if CONFIG_TASK_NAME_SIZE > 0
-	strncpy(pdump->info.name, rtcb->name, CONFIG_TASK_NAME_SIZE);
-#endif
-
-	pdump->info.pid = rtcb->pid;
-
-
-	/* If  current_regs is not NULL then we are in an interrupt context
-	 * and the user context is in current_regs else we are running in
-	 * the users context
-	 */
-
-	if (CURRENT_REGS) {
-		pdump->info.stacks.interrupt.sp = currentsp;
-
-		pdump->info.flags |= (eRegsPresent | eUserStackPresent | eIntStackPresent);
-		memcpy(pdump->info.regs, (void *)CURRENT_REGS, sizeof(pdump->info.regs));
-		pdump->info.stacks.user.sp = pdump->info.regs[REG_R13];
-
-	} else {
-
-		/* users context */
-		pdump->info.flags |= eUserStackPresent;
-
-		pdump->info.stacks.user.sp = currentsp;
-	}
-
-	if (pdump->info.pid == 0) {
-
-		pdump->info.stacks.user.top = g_idle_topstack - 4;
-		pdump->info.stacks.user.size = CONFIG_IDLETHREAD_STACKSIZE;
-
-	} else {
-		pdump->info.stacks.user.top = (uint32_t) rtcb->adj_stack_ptr;
-		pdump->info.stacks.user.size = (uint32_t) rtcb->adj_stack_size;;
-	}
-
-#if CONFIG_ARCH_INTERRUPTSTACK > 3
-
-	/* Get the limits on the interrupt stack memory */
-
-	pdump->info.stacks.interrupt.top = (uint32_t)&g_intstackbase;
-	pdump->info.stacks.interrupt.size  = (CONFIG_ARCH_INTERRUPTSTACK & ~3);
-
-	/* If In interrupt Context save the interrupt stack data centered
-	 * about the interrupt stack pointer
-	 */
-
-	if ((pdump->info.flags & eIntStackPresent) != 0) {
-		stack_word_t *ps = (stack_word_t *) pdump->info.stacks.interrupt.sp;
-		copy_reverse(pdump->istack, &ps[arraySize(pdump->istack) / 2], arraySize(pdump->istack));
-	}
-
-	/* Is it Invalid? */
-
-	if (!(pdump->info.stacks.interrupt.sp <= pdump->info.stacks.interrupt.top &&
-	      pdump->info.stacks.interrupt.sp > pdump->info.stacks.interrupt.top - pdump->info.stacks.interrupt.size)) {
-		pdump->info.flags |= eInvalidIntStackPrt;
-	}
-
-#endif
-
-	/* If In interrupt context or User save the user stack data centered
-	 * about the user stack pointer
-	 */
-	if ((pdump->info.flags & eUserStackPresent) != 0) {
-		stack_word_t *ps = (stack_word_t *) pdump->info.stacks.user.sp;
-		copy_reverse(pdump->ustack, &ps[arraySize(pdump->ustack) / 2], arraySize(pdump->ustack));
-	}
-
-	/* Is it Invalid? */
-
-	if (!(pdump->info.stacks.user.sp <= pdump->info.stacks.user.top &&
-	      pdump->info.stacks.user.sp > pdump->info.stacks.user.top - pdump->info.stacks.user.size)) {
-		pdump->info.flags |= eInvalidUserStackPtr;
-	}
-
-	int rv = stm32_bbsram_savepanic(HARDFAULT_FILENO, (uint8_t *)pdump, sizeof(fullcontext_s));
-
-	/* Test if memory got wiped because of using _sdata */
-
-	if (rv == -ENXIO) {
-		char *dead = "Memory wiped - dump not saved!";
-
-		while (*dead) {
-			up_lowputc(*dead++);
-		}
-
-	} else if (rv == -ENOSPC) {
-
-		/* hard fault again */
-
-		up_lowputc('!');
-	}
-
-
-#if defined(CONFIG_BOARD_RESET_ON_CRASH)
-	px4_systemreset(false);
-#endif
 }

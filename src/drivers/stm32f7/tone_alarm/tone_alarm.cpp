@@ -107,15 +107,18 @@
 #include <board_config.h>
 #include <drivers/drv_hrt.h>
 
-#include <arch/stm32/chip.h>
 #include <up_internal.h>
 #include <up_arch.h>
 
 #include <stm32_gpio.h>
 #include <stm32_tim.h>
+#include <stm32_rcc.h>
 
 #include <systemlib/err.h>
 #include <systemlib/circuit_breaker.h>
+
+#include <arch/chip/chip.h>
+
 
 /* Check that tone alarm and HRT timers are different */
 #if defined(TONE_ALARM_TIMER)  && defined(HRT_TIMER)

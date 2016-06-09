@@ -63,13 +63,13 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_range_finder.h>
 
-#include "chip.h"
-#include "up_internal.h"
-#include "up_arch.h"
+#include <up_internal.h>
+#include <up_arch.h>
 
-#include "stm32.h"
-#include "stm32_gpio.h"
-#include "stm32_tim.h"
+#include <chip.h>
+#include <stm32_gpio.h>
+#include <stm32_rcc.h>
+#include <stm32_tim.h>
 #include <systemlib/err.h>
 
 #include <uORB/uORB.h>
