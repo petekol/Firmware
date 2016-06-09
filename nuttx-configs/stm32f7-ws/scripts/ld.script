@@ -75,34 +75,20 @@ MEMORY
 }
 
 OUTPUT_ARCH(arm)
-
-ENTRY(__start)		/* treat __start as the anchor for dead code stripping */
-EXTERN(_vectors)	/* force the vectors to be included in the output */
-
-/* 
- * Ensure that abort() is present in the final object.  The exception handling
- * code pulled in by libgcc.a requires it (and that code cannot be easily avoided).
- */
-EXTERN(abort)
-EXTERN(_bootdelay_signature)
-
+EXTERN(_vectors)
+ENTRY(_stext)
 SECTIONS
 {
 	.text : {
 		_stext = ABSOLUTE(.);
 		*(.vectors)
-                . = ALIGN(32);
-                /*
-                This signature provides the bootloader with a way to delay booting
-                */
-                _bootdelay_signature = ABSOLUTE(.);
-                FILL(0xffecc2925d7d05c5)
-                . += 8;
 		*(.text .text.*)
 		*(.fixup)
 		*(.gnu.warning)
 		*(.rodata .rodata.*)
 		*(.gnu.linkonce.t.*)
+		*(.glue_7)
+		*(.glue_7t)
 		*(.got)
 		*(.gcc_except_table)
 		*(.gnu.linkonce.r.*)
@@ -118,11 +104,11 @@ SECTIONS
 	/*
 	 * Init functions (static constructors and the like)
 	 */
-        .init_section : {
-                _sinit = ABSOLUTE(.);
-                KEEP(*(.init_array .init_array.*))
-                _einit = ABSOLUTE(.);
-        } > flash
+    .init_section : {
+            _sinit = ABSOLUTE(.);
+            KEEP(*(.init_array .init_array.*))
+            _einit = ABSOLUTE(.);
+    } > flash
 
 	/*
 	 * Construction data for parameters.
