@@ -308,6 +308,9 @@ function(px4_add_module)
 	if(MAIN)
 		set_target_properties(${MODULE} PROPERTIES
 			COMPILE_DEFINITIONS PX4_MAIN=${MAIN}_app_main)
+		add_definitions(-DMODULE_NAME="${MAIN}")
+	else()
+		add_definitions(-DMODULE_NAME="${MODULE}")
 	endif()
 
 	if(INCLUDES)
@@ -407,7 +410,7 @@ function(px4_generate_messages)
 		list(APPEND msg_source_files_out ${msg_source_out_path}/${msg}.cpp)
 	endforeach()
 	add_custom_command(OUTPUT ${msg_source_files_out}
-		COMMAND ${PYTHON_EXECUTABLE} 
+		COMMAND ${PYTHON_EXECUTABLE}
 			Tools/px_generate_uorb_topic_files.py
 			--sources
 			${QUIET}
@@ -527,6 +530,24 @@ function(px4_add_adb_push)
 
 	add_custom_target(${OUT}
 		COMMAND ${CMAKE_SOURCE_DIR}/Tools/adb_upload.sh ${FILES} ${DEST}
+		DEPENDS ${DEPENDS}
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		COMMENT "uploading ${BUNDLE}"
+		VERBATIM
+		USES_TERMINAL
+		)
+endfunction()
+
+function(px4_add_adb_push_to_bebop)
+	px4_parse_function_args(
+		NAME px4_add_upload_to_bebop
+		ONE_VALUE OS BOARD OUT DEST
+		MULTI_VALUE FILES DEPENDS
+		REQUIRED OS BOARD OUT FILES DEPENDS DEST
+		ARGN ${ARGN})
+
+	add_custom_target(${OUT}
+		COMMAND ${CMAKE_SOURCE_DIR}/Tools/adb_upload_to_bebop.sh ${FILES} ${DEST}
 		DEPENDS ${DEPENDS}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		COMMENT "uploading ${BUNDLE}"

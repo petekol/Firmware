@@ -42,13 +42,13 @@
 #  if defined(CONFIG_ARCH_CHIP_STM32) || defined(CONFIG_ARCH_CHIP_STM32F7)
 
 #    if defined(CONFIG_ARCH_CHIP_STM32F7)
-__BEGIN_DECLS
-#		include <nuttx/i2c/i2c_master.h>
-#		include <nuttx/spi/spi.h>
-#		include <stm32_spi.h>
-#		include <stm32_i2c.h>
-#		include <stm32_gpio.h>
-__END_DECLS
+		__BEGIN_DECLS
+		#include <nuttx/i2c/i2c_master.h>
+		#include <nuttx/spi/spi.h>
+		#include <stm32_spi.h>
+		#include <stm32_i2c.h>
+		#include <stm32_gpio.h>
+		__END_DECLS
 #    endif
 
 #    define px4_spibus_initialize(port_1based)       stm32_spibus_initialize(port_1based)
