@@ -34,8 +34,8 @@
  *
  ************************************************************************************/
 
-#ifndef __CONFIG_STM32F7_WS_INCLUDE_BOARD_H
-#define __CONFIG_STM32F7_WS_INCLUDE_BOARD_H
+#ifndef __ARCH_BOARD_BOARD_H
+#define __ARCH_BOARD_BOARD_H
 
 /************************************************************************************
  * Included Files
@@ -220,13 +220,13 @@
 /************************************************************************************
  * Public Data
  ************************************************************************************/
+
 #ifndef __ASSEMBLY__
 
 #undef EXTERN
 #if defined(__cplusplus)
 #define EXTERN extern "C"
-extern "C"
-{
+extern "C" {
 #else
 #define EXTERN extern
 #endif
@@ -234,7 +234,6 @@ extern "C"
 /************************************************************************************
  * Public Function Prototypes
  ************************************************************************************/
-
 /************************************************************************************
  * Name: stm32_boardinitialize
  *
@@ -245,7 +244,7 @@ extern "C"
  *
  ************************************************************************************/
 
-void stm32_boardinitialize(void);
+EXTERN void stm32_boardinitialize(void);
 
 #undef EXTERN
 #if defined(__cplusplus)
@@ -253,4 +252,4 @@ void stm32_boardinitialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif  /* __CONFIG_STM32F7_WS_INCLUDE_BOARD_H */
+#endif  /* __ARCH_BOARD_BOARD_H */

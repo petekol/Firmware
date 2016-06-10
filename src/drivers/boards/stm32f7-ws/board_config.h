@@ -268,6 +268,9 @@ __BEGIN_DECLS
 		{0,                      GPIO_VDD_3V3_SENSORS_EN, 0}, \
 		{GPIO_VDD_BRICK_VALID,   0,                       0}, }
 
+/* This board provides a DMA pool and APIs */
+
+//#define BOARD_DMA_ALLOC_POOL_SIZE 5120
 
 /****************************************************************************************************
  * Public Types
@@ -317,6 +320,8 @@ extern void board_peripheral_reset(int ms);
 #ifdef CONFIG_NSH_LIBRARY
 int nsh_archinitialize(void);
 #endif
+
+#include "../common/board_common.h"
 
 #endif /* __ASSEMBLY__ */
 
