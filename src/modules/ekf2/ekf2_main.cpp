@@ -536,7 +536,7 @@ void Ekf2::task_main()
 
 		// only set airspeed data if condition for airspeed fusion are met
 		bool fuse_airspeed = airspeed_updated && !_vehicle_status.is_rotary_wing
-				     && _arspFusionThreshold.get() <= airspeed.true_airspeed_m_s;
+				     && _arspFusionThreshold.get() <= airspeed.true_airspeed_m_s && _arspFusionThreshold.get() >= 0.1f;
 
 		if (fuse_airspeed) {
 			float eas2tas = airspeed.true_airspeed_m_s / airspeed.indicated_airspeed_m_s;
@@ -609,10 +609,12 @@ void Ekf2::task_main()
 
 			// generate control state data
 			control_state_s ctrl_state = {};
+			float gyro_bias[3] = {};
+			_ekf.get_gyro_bias(gyro_bias);
 			ctrl_state.timestamp = hrt_absolute_time();
-			ctrl_state.roll_rate = _lp_roll_rate.apply(sensors.gyro_rad_s[0]);
-			ctrl_state.pitch_rate = _lp_pitch_rate.apply(sensors.gyro_rad_s[1]);
-			ctrl_state.yaw_rate = _lp_yaw_rate.apply(sensors.gyro_rad_s[2]);
+			ctrl_state.roll_rate = _lp_roll_rate.apply(sensors.gyro_rad_s[0]) - gyro_bias[0];
+			ctrl_state.pitch_rate = _lp_pitch_rate.apply(sensors.gyro_rad_s[1]) - gyro_bias[1];
+			ctrl_state.yaw_rate = _lp_yaw_rate.apply(sensors.gyro_rad_s[2]) - gyro_bias[2];
 
 			// Velocity in body frame
 			float velocity[3];

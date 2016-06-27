@@ -1346,7 +1346,7 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 		}
 	}
 
-	if (interval == 0) {
+	if (interval <= 0) {
 		/* stream was not active and is requested to be disabled, do nothing */
 		return OK;
 	}
@@ -1701,7 +1701,6 @@ Mavlink::task_main(int argc, char *argv[])
 		case 'o':
 			temp_int_arg = strtoul(myoptarg, &eptr, 10);
 			if ( *eptr == '\0' ) {
-				warnx("set remote port %d", temp_int_arg);
 				_remote_port = temp_int_arg;
 				set_protocol(UDP);
 			} else {
@@ -1822,8 +1821,8 @@ Mavlink::task_main(int argc, char *argv[])
 			return ERROR;
 		}
 
-		PX4_INFO("mode: %s, data rate: %d B/s on udp port %hu",
-			 mavlink_mode_str(_mode), _datarate, _network_port);
+		PX4_INFO("mode: %s, data rate: %d B/s on udp port %hu remote port %hu",
+			 mavlink_mode_str(_mode), _datarate, _network_port, _remote_port);
 	}
 
 	/* initialize send mutex */
