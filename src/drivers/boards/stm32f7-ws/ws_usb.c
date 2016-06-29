@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file px4fmu_usb.c
+ * @file ws_usb.c
  *
  * Board-specific USB functions.
  */
@@ -52,7 +52,9 @@
 #include <nuttx/usb/usbdev_trace.h>
 
 #include <up_arch.h>
-#include <stm32.h>
+
+#include <stm32_otg.h>
+#include <stm32_gpio.h>
 #include "board_config.h"
 
 /************************************************************************************
@@ -71,7 +73,7 @@
  * Name: stm32_usbinitialize
  *
  * Description:
- *   Called to setup USB-related GPIO pins for the PX4FMU board.
+ *   Called to setup USB-related GPIO pins for the board.
  *
  ************************************************************************************/
 
@@ -103,6 +105,6 @@ __EXPORT void stm32_usbinitialize(void)
 
 __EXPORT void stm32_usbsuspend(FAR struct usbdev_s *dev, bool resume)
 {
-	//ulldbg("resume: %d\n", resume);
+	uinfo("resume: %d\n", resume);
 }
 

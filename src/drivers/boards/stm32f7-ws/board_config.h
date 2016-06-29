@@ -105,7 +105,7 @@ __BEGIN_DECLS
 
 #define PX4_SPI_BUS_SENSORS	1
 #define PX4_SPI_BUS_RAMTRON	2
-#define PX4_SPI_BUS_BARO PX4_SPI_BUS_SENSORS
+#define PX4_SPI_BUS_BARO 	PX4_SPI_BUS_SENSORS
 
 /* Use these in place of the spi_dev_e enumeration to select a specific SPI device on SPI1 */
 #define PX4_SPIDEV_GYRO			1
@@ -135,13 +135,11 @@ __BEGIN_DECLS
  *
  * These are the channel numbers of the ADCs of the microcontroller that can be used by the Px4 Firmware in the adc driver
  */
-#define ADC_CHANNELS (1 << 2) | (1 << 3) | (1 << 4) | (1 << 10) | (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14)
+#define ADC_CHANNELS (1 << 2)
 
 // ADC defines to be used in sensors.cpp to read from a particular channel
 #define ADC_BATTERY_VOLTAGE_CHANNEL		2
-#define ADC_BATTERY_CURRENT_CHANNEL		3
-#define ADC_5V_RAIL_SENSE				4
-#define ADC_RC_RSSI_CHANNEL				11
+#define ADC_BATTERY_CURRENT_CHANNEL     0 //needed by sensors.cpp
 
 /* User GPIOs
  *
@@ -160,10 +158,6 @@ __BEGIN_DECLS
 #define GPIO_GPIO3_OUTPUT	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN9)
 #define GPIO_GPIO4_OUTPUT	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTD|GPIO_PIN13)
 #define GPIO_GPIO5_OUTPUT	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTD|GPIO_PIN14)
-
-/* Power supply control and monitoring GPIOs */
-#define GPIO_VDD_BRICK_VALID	(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN5)
-#define GPIO_VDD_3V3_SENSORS_EN	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN3)
 
 /* Tone alarm output */
 #define TONE_ALARM_TIMER		2	/* timer 2 */
@@ -210,39 +204,6 @@ __BEGIN_DECLS
 #define HRT_TIMER		3	/* use timer8 for the HRT */
 #define HRT_TIMER_CHANNEL	4	/* use capture/compare channel */
 
-#define HRT_PPM_CHANNEL		3	/* use capture/compare channel 2 */
-#define GPIO_PPM_IN			(GPIO_ALT|GPIO_AF2|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN0)
-
-#define RC_SERIAL_PORT		"/dev/ttyS4"
-
-/* PWM input driver. Use FMU AUX5 pins attached to timer4 channel 2 */
-#define PWMIN_TIMER			4
-#define PWMIN_TIMER_CHANNEL	2
-#define GPIO_PWM_IN			GPIO_TIM4_CH2IN_2
-
-#define GPIO_RSSI_IN 			(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN1)
-#define GPIO_LED_SAFETY			(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN3)
-#define GPIO_BTN_SAFETY			(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN4)
-#define GPIO_PERIPH_3V3_EN		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN5)
-/* for R12, this signal is active high */
-#define GPIO_SBUS_INV			(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN13)
-#define INVERT_RC_INPUT(_s)		px4_arch_gpiowrite(GPIO_SBUS_INV, _s);
-
-#define GPIO_8266_GPIO0			(GPIO_INPUT|GPIO_PULLUP|GPIO_PORTE|GPIO_PIN2)
-#define GPIO_SPEKTRUM_PWR_EN		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN4)
-#define GPIO_8266_PD			(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN5)
-#define GPIO_8266_RST			(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN6)
-
-/* Power switch controls ******************************************************/
-
-#define POWER_SPEKTRUM(_s)			px4_arch_gpiowrite(GPIO_SPEKTRUM_PWR_EN, (1-_s))
-#define SPEKTRUM_RX_AS_UART()		px4_arch_configgpio(GPIO_USART1_RX)
-
-// board has a separate GPIO for serial RC output
-#define GPIO_RC_OUT			(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_2MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN6)
-#define SPEKTRUM_RX_AS_GPIO()		px4_arch_configgpio(GPIO_RC_OUT)
-#define SPEKTRUM_RX_HIGH(_s)		px4_arch_gpiowrite(GPIO_RC_OUT, (_s))
-
 
 #define	BOARD_NAME "STM32F7_WS"
 
@@ -251,7 +212,7 @@ __BEGIN_DECLS
  * provides the true logic GPIO BOARD_ADC_xxxx macros.
  */
 #define BOARD_ADC_USB_CONNECTED (px4_arch_gpioread(GPIO_OTGFS_VBUS))
-#define BOARD_ADC_BRICK_VALID   (px4_arch_gpioread(GPIO_VDD_BRICK_VALID))
+#define BOARD_ADC_BRICK_VALID   (1)
 #define BOARD_ADC_SERVO_VALID   (1)
 #define BOARD_ADC_PERIPH_5V_OC  (0)
 #define BOARD_ADC_HIPOWER_5V_OC (0)
@@ -264,9 +225,7 @@ __BEGIN_DECLS
 		{GPIO_GPIO2_INPUT,       GPIO_GPIO2_OUTPUT,       0}, \
 		{GPIO_GPIO3_INPUT,       GPIO_GPIO3_OUTPUT,       0}, \
 		{GPIO_GPIO4_INPUT,       GPIO_GPIO4_OUTPUT,       0}, \
-		{GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0}, \
-		{0,                      GPIO_VDD_3V3_SENSORS_EN, 0}, \
-		{GPIO_VDD_BRICK_VALID,   0,                       0}, }
+		{GPIO_GPIO5_INPUT,       GPIO_GPIO5_OUTPUT,       0}, }
 
 /* This board provides a DMA pool and APIs */
 

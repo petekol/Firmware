@@ -36,6 +36,7 @@ px4_add_module(
 		-Os
 	SRCS
 		../common/board_name.c
+		../common/board_dma_alloc.c
 		ws_init.c
 		ws_timer_config.c
 		ws_spi.c

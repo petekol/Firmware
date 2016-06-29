@@ -159,9 +159,6 @@ ADC::ADC(uint32_t channels) :
 {
 	_debug_enabled = true;
 
-	/* always enable the temperature sensor */
-	channels |= 1 << 16;
-
 	/* allocate the sample array */
 	for (unsigned i = 0; i < 32; i++) {
 		if (channels & (1 << i)) {

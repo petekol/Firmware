@@ -93,13 +93,13 @@
 
 #ifdef CONFIG_CPP_HAVE_VARARGS
 #  ifdef CONFIG_DEBUG
-#    define message(...) lowsyslog(__VA_ARGS__)
+#    define message(...) syslog(__VA_ARGS__)
 #  else
 #    define message(...) printf(__VA_ARGS__)
 #  endif
 #else
 #  ifdef CONFIG_DEBUG
-#    define message lowsyslog
+#    define message syslog
 #  else
 #    define message printf
 #  endif
@@ -132,25 +132,7 @@ __END_DECLS
  ************************************************************************************/
 __EXPORT void board_peripheral_reset(int ms)
 {
-	/* set the peripheral rails off */
-	stm32_configgpio(GPIO_PERIPH_3V3_EN);
-
-	stm32_gpiowrite(GPIO_PERIPH_3V3_EN, 0);
-
-	bool last = stm32_gpioread(GPIO_SPEKTRUM_PWR_EN);
-	/* Keep Spektum on to discharge rail*/
-	stm32_gpiowrite(GPIO_SPEKTRUM_PWR_EN, 1);
-
-	/* wait for the peripheral rail to reach GND */
-	usleep(ms * 1000);
-	warnx("reset done, %d ms", ms);
-
-	/* re-enable power */
-
-	/* switch the peripheral rail back on */
-	stm32_gpiowrite(GPIO_SPEKTRUM_PWR_EN, last);
-	stm32_gpiowrite(GPIO_PERIPH_3V3_EN, 1);
-
+	/* nothing to do here */
 }
 
 /************************************************************************************
@@ -168,25 +150,6 @@ stm32_boardinitialize(void)
 {
 	/* configure ADC pins */
 	stm32_configgpio(GPIO_ADC1_IN2);	/* BATT_VOLTAGE_SENS */
-	stm32_configgpio(GPIO_ADC1_IN3);	/* BATT_CURRENT_SENS */
-	stm32_configgpio(GPIO_ADC1_IN4);	/* VDD_5V_SENS */
-	stm32_configgpio(GPIO_ADC1_IN11);	/* RSSI analog in */
-
-	/* configure power supply control/sense pins */
-	stm32_configgpio(GPIO_PERIPH_3V3_EN);
-	stm32_configgpio(GPIO_VDD_BRICK_VALID);
-
-	stm32_configgpio(GPIO_SBUS_INV);
-	stm32_configgpio(GPIO_8266_GPIO0);
-	stm32_configgpio(GPIO_SPEKTRUM_PWR_EN);
-	stm32_configgpio(GPIO_8266_PD);
-	stm32_configgpio(GPIO_8266_RST);
-	stm32_configgpio(GPIO_BTN_SAFETY);
-
-#ifdef GPIO_RC_OUT
-	stm32_configgpio(GPIO_RC_OUT);      /* Serial RC output pin */
-	stm32_gpiowrite(GPIO_RC_OUT, 1);    /* set it high to pull RC input up */
-#endif
 
 	/* configure the GPIO pins to outputs and keep them low */
 	stm32_configgpio(GPIO_GPIO0_OUTPUT);
@@ -301,11 +264,11 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		return -ENODEV;
 	}
 
-	/* Default SPI1 to 1MHz and de-assert the known chip selects. */
-	SPI_SETFREQUENCY(spi1, 10000000);
+	/* Default SPI1 to 10MHz and de-assert the known chip selects. */
+	SPI_SETFREQUENCY(spi1, 10 * 1000 * 1000);
 	SPI_SETBITS(spi1, 8);
 	SPI_SETMODE(spi1, SPIDEV_MODE3);
-	SPI_SELECT(spi1, PX4_SPIDEV_GYRO, false);
+	SPI_SELECT(spi1, PX4_SPIDEV_BARO, false);
 	SPI_SELECT(spi1, PX4_SPIDEV_HMC, false);
 	SPI_SELECT(spi1, PX4_SPIDEV_MPU, false);
 	up_udelay(20);

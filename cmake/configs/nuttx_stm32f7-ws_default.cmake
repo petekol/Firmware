@@ -26,7 +26,7 @@ set(config_module_list
 	drivers/blinkm
 	modules/sensors
 	drivers/mkblctrl
-	drivers/pwm_input
+	#drivers/pwm_input
 	drivers/bmp280
 
 	#
