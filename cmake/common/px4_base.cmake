@@ -45,6 +45,9 @@
 #		* px4_generate_messages
 #		* px4_add_upload
 #		* px4_add_common_flags
+#		* px4_add_optimization_flags_for_target
+#		* px4_add_executable
+#		* px4_add_library
 #
 
 include(CMakeParseArguments)
@@ -138,17 +141,17 @@ function(px4_add_git_submodule)
 		REQUIRED TARGET PATH
 		ARGN ${ARGN})
 	string(REPLACE "/" "_" NAME ${PATH})
-	add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/git_init_${NAME}.stamp
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		COMMAND touch ${CMAKE_BINARY_DIR}/git_init_${NAME}.stamp
-		DEPENDS ${CMAKE_SOURCE_DIR}/.gitmodules
+	add_custom_command(OUTPUT ${PX4_BINARY_DIR}/git_init_${NAME}.stamp
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		COMMAND touch ${PX4_BINARY_DIR}/git_init_${NAME}.stamp
+		DEPENDS ${PX4_SOURCE_DIR}/.gitmodules
 		)
 	add_custom_target(${TARGET}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 # todo:Not have 2 list of submodues one (see the end of Tools/check_submodules.sh and Firmware/CMakeLists.txt) 
 # using the list of submodules from the CMake file to drive the test
 #		COMMAND Tools/check_submodules.sh ${PATH}
-		DEPENDS ${CMAKE_BINARY_DIR}/git_init_${NAME}.stamp
+		DEPENDS ${PX4_BINARY_DIR}/git_init_${NAME}.stamp
 		)
 endfunction()
 
@@ -271,7 +274,7 @@ function(px4_add_module)
 		REQUIRED MODULE
 		ARGN ${ARGN})
 
-	add_library(${MODULE} STATIC EXCLUDE_FROM_ALL ${SRCS})
+	px4_add_library(${MODULE} STATIC EXCLUDE_FROM_ALL ${SRCS})
 
 	# set defaults if not set
 	set(MAIN_DEFAULT MAIN-NOTFOUND)
@@ -331,6 +334,9 @@ function(px4_add_module)
 	# store module properties in target
 	# COMPILE_FLAGS and LINK_FLAGS are passed to compiler/linker by cmake
 	# STACK_MAIN, MAIN, PRIORITY are PX4 specific
+	if(COMPILE_FLAGS AND ${_no_optimization_for_target})
+		px4_strip_optimization(COMPILE_FLAGS ${COMPILE_FLAGS})
+	endif()
 	foreach (prop COMPILE_FLAGS LINK_FLAGS STACK_MAIN MAIN PRIORITY)
 		if (${prop})
 			set_target_properties(${MODULE} PROPERTIES ${prop} ${${prop}})
@@ -378,7 +384,7 @@ function(px4_generate_messages)
 	endif()
 
 	# headers
-	set(msg_out_path ${CMAKE_BINARY_DIR}/src/modules/uORB/topics)
+	set(msg_out_path ${PX4_BINARY_DIR}/src/modules/uORB/topics)
 	set(msg_list)
 	foreach(msg_file ${MSG_FILES})
 		get_filename_component(msg ${msg_file} NAME_WE)
@@ -393,18 +399,18 @@ function(px4_generate_messages)
 			Tools/px_generate_uorb_topic_files.py
 			--headers
 			${QUIET}
-			-d msg
+			-f ${MSG_FILES}
 			-o ${msg_out_path}
 			-e msg/templates/uorb
-			-t ${CMAKE_BINARY_DIR}/topics_temporary_header
+			-t ${PX4_BINARY_DIR}/topics_temporary_header
 		DEPENDS ${DEPENDS} ${MSG_FILES}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		COMMENT "Generating uORB topic headers"
 		VERBATIM
 		)
 
 	# !sources
-	set(msg_source_out_path	${CMAKE_BINARY_DIR}/topics_sources)
+	set(msg_source_out_path	${PX4_BINARY_DIR}/topics_sources)
 	set(msg_source_files_out ${msg_source_out_path}/uORBTopics.cpp)
 	foreach(msg ${msg_list})
 		list(APPEND msg_source_files_out ${msg_source_out_path}/${msg}.cpp)
@@ -414,12 +420,12 @@ function(px4_generate_messages)
 			Tools/px_generate_uorb_topic_files.py
 			--sources
 			${QUIET}
-			-d msg
+			-f ${MSG_FILES}
 			-o ${msg_source_out_path}
 			-e msg/templates/uorb
-			-t ${CMAKE_BINARY_DIR}/topics_temporary_sources
+			-t ${PX4_BINARY_DIR}/topics_temporary_sources
 		DEPENDS ${DEPENDS} ${MSG_FILES}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		COMMENT "Generating uORB topic sources"
 		VERBATIM
 		)
@@ -434,7 +440,7 @@ function(px4_generate_messages)
 
 	# multi messages for target OS
 	set(msg_multi_out_path
-		${CMAKE_BINARY_DIR}/src/platforms/${OS}/px4_messages)
+		${PX4_BINARY_DIR}/src/platforms/${OS}/px4_messages)
 	set(msg_multi_files_out)
 	foreach(msg ${msg_list})
 		list(APPEND msg_multi_files_out ${msg_multi_out_path}/px4_${msg}.h)
@@ -444,18 +450,18 @@ function(px4_generate_messages)
 			Tools/px_generate_uorb_topic_files.py
 			--headers
 			${QUIET}
-			-d msg
+			-f ${MSG_FILES}
 			-o ${msg_multi_out_path}
 			-e msg/templates/px4/uorb
-			-t ${CMAKE_BINARY_DIR}/multi_topics_temporary/${OS}
+			-t ${PX4_BINARY_DIR}/multi_topics_temporary/${OS}
 			-p "px4_"
 		DEPENDS ${DEPENDS} ${MSG_FILES}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		COMMENT "Generating uORB topic multi headers for ${OS}"
 		VERBATIM
 		)
 
-	add_library(${TARGET}
+	px4_add_library(${TARGET}
 		${msg_source_files_out}
 		${msg_multi_files_out}
 		${msg_files_out}
@@ -495,6 +501,8 @@ function(px4_add_upload)
 	if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
 		list(APPEND serial_ports
 			/dev/serial/by-id/usb-3D_Robotics*
+			/dev/serial/by-id/usb-The_Autopilot*
+			/dev/serial/by-id/usb-Bitcraze*
 			/dev/serial/by-id/pci-3D_Robotics*
 			)
 	elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
@@ -510,9 +518,9 @@ function(px4_add_upload)
 	px4_join(OUT serial_ports LIST "${serial_ports}" GLUE ",")
 	add_custom_target(${OUT}
 		COMMAND ${PYTHON_EXECUTABLE}
-			${CMAKE_SOURCE_DIR}/Tools/px_uploader.py --port ${serial_ports} ${BUNDLE}
+			${PX4_SOURCE_DIR}/Tools/px_uploader.py --port ${serial_ports} ${BUNDLE}
 		DEPENDS ${BUNDLE}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		WORKING_DIRECTORY ${PX4_BINARY_DIR}
 		COMMENT "uploading ${BUNDLE}"
 		VERBATIM
 		USES_TERMINAL
@@ -529,9 +537,9 @@ function(px4_add_adb_push)
 		ARGN ${ARGN})
 
 	add_custom_target(${OUT}
-		COMMAND ${CMAKE_SOURCE_DIR}/Tools/adb_upload.sh ${FILES} ${DEST}
+		COMMAND ${PX4_SOURCE_DIR}/Tools/adb_upload.sh ${FILES} ${DEST}
 		DEPENDS ${DEPENDS}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		WORKING_DIRECTORY ${PX4_BINARY_DIR}
 		COMMENT "uploading ${BUNDLE}"
 		VERBATIM
 		USES_TERMINAL
@@ -547,9 +555,9 @@ function(px4_add_adb_push_to_bebop)
 		ARGN ${ARGN})
 
 	add_custom_target(${OUT}
-		COMMAND ${CMAKE_SOURCE_DIR}/Tools/adb_upload_to_bebop.sh ${FILES} ${DEST}
+		COMMAND ${PX4_SOURCE_DIR}/Tools/adb_upload_to_bebop.sh ${FILES} ${DEST}
 		DEPENDS ${DEPENDS}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		WORKING_DIRECTORY ${PX4_BINARY_DIR}
 		COMMENT "uploading ${BUNDLE}"
 		VERBATIM
 		USES_TERMINAL
@@ -565,9 +573,9 @@ function(px4_add_scp_push)
 		ARGN ${ARGN})
 
 	add_custom_target(${OUT}
-		COMMAND ${CMAKE_SOURCE_DIR}/Tools/scp_upload.sh ${FILES} ${DEST}
+		COMMAND ${PX4_SOURCE_DIR}/Tools/scp_upload.sh ${FILES} ${DEST}
 		DEPENDS ${DEPENDS}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		WORKING_DIRECTORY ${PX4_BINARY_DIR}
 		COMMENT "uploading ${BUNDLE}"
 		VERBATIM
 		USES_TERMINAL
@@ -579,13 +587,14 @@ endfunction()
 #
 #	px4_add_common_flags
 #
-#	Set ths default build flags.
+#	Set the default build flags.
 #
 #	Usage:
 #		px4_add_common_flags(
 #			BOARD <in-string>
 #			C_FLAGS <inout-variable>
 #			CXX_FLAGS <inout-variable>
+#			OPTIMIZATION_FLAGS <inout-variable>
 #			EXE_LINKER_FLAGS <inout-variable>
 #			INCLUDE_DIRS <inout-variable>
 #			LINK_DIRS <inout-variable>
@@ -597,8 +606,9 @@ endfunction()
 #	Input/Output: (appends to existing variable)
 #		C_FLAGS					: c compile flags variable
 #		CXX_FLAGS				: c++ compile flags variable
-#		EXE_LINKER_FLAGS		: executable linker flags variable
-#		INCLUDE_DIRS			: include directories
+#		OPTIMIZATION_FLAGS			: optimization compile flags variable
+#		EXE_LINKER_FLAGS			: executable linker flags variable
+#		INCLUDE_DIRS				: include directories
 #		LINK_DIRS				: link directories
 #		DEFINITIONS				: definitions
 #
@@ -607,13 +617,14 @@ endfunction()
 #			BOARD px4fmu-v2
 #			C_FLAGS CMAKE_C_FLAGS
 #			CXX_FLAGS CMAKE_CXX_FLAGS
+#			OPTIMIZATION_FLAGS optimization_flags
 #			EXE_LINKER_FLAG CMAKE_EXE_LINKER_FLAGS
 #			INCLUDES <list>)
 #
 function(px4_add_common_flags)
 
 	set(inout_vars
-		C_FLAGS CXX_FLAGS EXE_LINKER_FLAGS INCLUDE_DIRS LINK_DIRS DEFINITIONS)
+		C_FLAGS CXX_FLAGS OPTIMIZATION_FLAGS EXE_LINKER_FLAGS INCLUDE_DIRS LINK_DIRS DEFINITIONS)
 
 	px4_parse_function_args(
 		NAME px4_add_common_flags
@@ -669,7 +680,8 @@ function(px4_add_common_flags)
 		message(STATUS "address sanitizer enabled")
 		set(max_optimization -Os)
 
-		set(optimization_flags
+		# Do not use optimization_flags (without _) as that is already used.
+		set(_optimization_flags
 			-fno-strict-aliasing
 			-fno-omit-frame-pointer
 			-funsafe-math-optimizations
@@ -683,7 +695,7 @@ function(px4_add_common_flags)
 		if ("${OS}" STREQUAL "qurt")
 			set(PIC_FLAG -fPIC)
 		endif()
-		set(optimization_flags
+		set(_optimization_flags
 			-fno-strict-aliasing
 			-fomit-frame-pointer
 			-funsafe-math-optimizations
@@ -694,7 +706,7 @@ function(px4_add_common_flags)
 	endif()
 
 	if (NOT ${CMAKE_C_COMPILER_ID} MATCHES ".*Clang.*")
-		list(APPEND optimization_flags
+		list(APPEND _optimization_flags
 			-fno-strength-reduce
 			-fno-builtin-printf
 		)
@@ -752,8 +764,6 @@ function(px4_add_common_flags)
 		${c_compile_flags}
 		${warnings}
 		${c_warnings}
-		${max_optimization}
-		${optimization_flags}
 		${visibility_flags}
 		)
 
@@ -761,27 +771,30 @@ function(px4_add_common_flags)
 		${cxx_compile_flags}
 		${warnings}
 		${cxx_warnings}
-		${max_optimization}
-		${optimization_flags}
 		${visibility_flags}
 		)
 
+	set(added_optimization_flags
+		${max_optimization}
+		${_optimization_flags}
+		)
+
 	set(added_include_dirs
-		${CMAKE_SOURCE_DIR}/src
-		${CMAKE_BINARY_DIR}
-		${CMAKE_BINARY_DIR}/src
-		${CMAKE_SOURCE_DIR}/src/modules
-		${CMAKE_SOURCE_DIR}/src/include
-		${CMAKE_SOURCE_DIR}/src/lib
-		${CMAKE_SOURCE_DIR}/src/platforms
+		${PX4_SOURCE_DIR}/src
+		${PX4_BINARY_DIR}
+		${PX4_BINARY_DIR}/src
+		${PX4_SOURCE_DIR}/src/modules
+		${PX4_SOURCE_DIR}/src/include
+		${PX4_SOURCE_DIR}/src/lib
+		${PX4_SOURCE_DIR}/src/platforms
 		# TODO Build/versioning was in Makefile,
 		# do we need this, how does it work with cmake
-		${CMAKE_SOURCE_DIR}/src/drivers/boards/${BOARD}
-		${CMAKE_BINARY_DIR}
-		${CMAKE_BINARY_DIR}/src/modules/px4_messages
-		${CMAKE_BINARY_DIR}/src/modules
-		${CMAKE_SOURCE_DIR}/mavlink/include/mavlink
-		${CMAKE_SOURCE_DIR}/src/lib/DriverFramework/framework/include
+		${PX4_SOURCE_DIR}/src/drivers/boards/${BOARD}
+		${PX4_BINARY_DIR}
+		${PX4_BINARY_DIR}/src/modules/px4_messages
+		${PX4_BINARY_DIR}/src/modules
+		${PX4_SOURCE_DIR}/mavlink/include/mavlink
+		${PX4_SOURCE_DIR}/src/lib/DriverFramework/framework/include
 		)
 
 	list(APPEND added_include_dirs
@@ -794,6 +807,7 @@ function(px4_add_common_flags)
 	string(REPLACE "-" "_" board_config ${board_upper})
 	set(added_definitions
 		-DCONFIG_ARCH_BOARD_${board_config}
+		-D__STDC_FORMAT_MACROS
 		)
 
 	if (NOT (APPLE AND (${CMAKE_C_COMPILER_ID} MATCHES ".*Clang.*")))
@@ -863,19 +877,19 @@ function(px4_create_git_hash_header)
 		COMMAND git describe --always --tags
 		OUTPUT_VARIABLE git_tag
 		OUTPUT_STRIP_TRAILING_WHITESPACE
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		)
 	message(STATUS "GIT_TAG = ${git_tag}")
 	execute_process(
 		COMMAND git rev-parse --verify HEAD
 		OUTPUT_VARIABLE git_version
 		OUTPUT_STRIP_TRAILING_WHITESPACE
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		)
 	#message(STATUS "GIT_VERSION = ${git_version}")
 	set(git_version_short)
 	string(SUBSTRING ${git_version} 1 16 git_version_short)
-	configure_file(${CMAKE_SOURCE_DIR}/cmake/templates/build_git_version.h.in ${HEADER} @ONLY)
+	configure_file(${PX4_SOURCE_DIR}/cmake/templates/build_git_version.h.in ${HEADER} @ONLY)
 endfunction()
 
 #=============================================================================
@@ -902,12 +916,12 @@ function(px4_generate_parameters_xml)
 		ONE_VALUE OUT BOARD
 		REQUIRED OUT BOARD
 		ARGN ${ARGN})
-	set(path ${CMAKE_SOURCE_DIR}/src)
+	set(path ${PX4_SOURCE_DIR}/src)
 	file(GLOB_RECURSE param_src_files
-		${CMAKE_SOURCE_DIR}/src/*params.c
+		${PX4_SOURCE_DIR}/src/*params.c
 		)
 	add_custom_command(OUTPUT ${OUT}
-		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/Tools/px_process_params.py
+		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/px_process_params.py
 			-s ${path} --board CONFIG_ARCH_${BOARD} --xml --inject-xml
 		DEPENDS ${param_src_files}
 		)
@@ -949,7 +963,7 @@ function(px4_generate_parameters_source)
 		set(SCOPE "")
 	endif()
 	add_custom_command(OUTPUT ${generated_files}
-		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/Tools/px_generate_params.py ${XML} ${SCOPE}
+		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/px_generate_params.py ${XML} ${SCOPE}
 		DEPENDS ${XML} ${DEPS} ${SCOPE}
 		)
 	set(${OUT} ${generated_files} PARENT_SCOPE)
@@ -980,10 +994,10 @@ function(px4_generate_airframes_xml)
 		ONE_VALUE OUT BOARD
 		REQUIRED OUT BOARD
 		ARGN ${ARGN})
-	set(process_airframes ${CMAKE_SOURCE_DIR}/Tools/px_process_airframes.py)
+	set(process_airframes ${PX4_SOURCE_DIR}/Tools/px_process_airframes.py)
 	add_custom_command(OUTPUT ${OUT}
 		COMMAND ${PYTHON_EXECUTABLE} ${process_airframes}
-			-a ${CMAKE_SOURCE_DIR}/ROMFS/${config_romfs_root}/init.d
+			-a ${PX4_SOURCE_DIR}/ROMFS/${config_romfs_root}/init.d
 			--board CONFIG_ARCH_BOARD_${BOARD} --xml
 		)
 	set(${OUT} ${${OUT}} PARENT_SCOPE)
@@ -1065,6 +1079,74 @@ function(px4_share_subdirectory)
 		REQUIRED RELDIR
 		ARGN ${ARGN})
 		add_subdirectory(${RELDIR} ${RELDIR}/${RELDIR} ${ARGS})
+endfunction()
+#=============================================================================
+#
+#	px4_strip_optimization
+#
+function(px4_strip_optimization name)
+	set(_compile_flags)
+	separate_arguments(_args UNIX_COMMAND ${ARGN})
+	foreach(_flag ${_args})
+		if(NOT "${_flag}" MATCHES "^-O")
+			set(_compile_flags "${_compile_flags} ${_flag}")
+		endif()
+	endforeach()
+	string(STRIP "${_compile_flags}" _compile_flags)
+	set(${name} "${_compile_flags}" PARENT_SCOPE)
+endfunction()
+
+#=============================================================================
+#
+#	px4_add_optimization_flags_for_target
+#
+set(all_posix_cmake_targets "" CACHE INTERNAL "All cmake targets for which optimization can be suppressed")
+function(px4_add_optimization_flags_for_target target)
+	set(_no_optimization_for_target FALSE)
+	# If the current CONFIG is posix_sitl_* then suppress optimization for certain targets.
+	if(CONFIG MATCHES "^posix_sitl_")
+		foreach(_regexp $ENV{PX4_NO_OPTIMIZATION})
+			if("${target}" MATCHES "${_regexp}")
+				set(_no_optimization_for_target TRUE)
+				set(_matched_regexp "${_regexp}")
+			endif()
+		endforeach()
+		# Create a full list of targets that optimization can be suppressed for.
+		list(APPEND all_posix_cmake_targets ${target})
+		set(all_posix_cmake_targets ${all_posix_cmake_targets} CACHE INTERNAL "All cmake targets for which optimization can be suppressed")
+	endif()
+	if(NOT ${_no_optimization_for_target})
+		target_compile_options(${target} PRIVATE ${optimization_flags})
+	else()
+		message(STATUS "Disabling optimization for target '${target}' because it matches the regexp '${_matched_regexp}' in env var PX4_NO_OPTIMIZATION")
+		target_compile_options(${target} PRIVATE -O0)
+	endif()
+	# Pass variable to the parent px4_add_library.
+	set(_no_optimization_for_target ${_no_optimization_for_target} PARENT_SCOPE)
+endfunction()
+
+#=============================================================================
+#
+#	px4_add_executable
+#
+#	Like add_executable but with optimization flag fixup.
+#
+function(px4_add_executable target)
+	add_executable(${target} ${ARGN})
+	px4_add_optimization_flags_for_target(${target})
+endfunction()
+
+#=============================================================================
+#
+#	px4_add_library
+#
+#	Like add_library but with optimization flag fixup.
+#
+function(px4_add_library target)
+	add_library(${target} ${ARGN})
+	px4_add_optimization_flags_for_target(${target})
+	# Pass variable to the parent px4_add_module.
+	set(_no_optimization_for_target ${_no_optimization_for_target} PARENT_SCOPE)
 endfunction()
 
 # vim: set noet fenc=utf-8 ff=unix nowrap:

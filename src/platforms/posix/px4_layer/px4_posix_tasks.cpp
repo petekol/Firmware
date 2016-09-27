@@ -90,11 +90,15 @@ static void *entry_adapter(void *ptr)
 	pthdata_t *data = (pthdata_t *) ptr;
 
 	int rv;
+
 	// set the threads name
 #ifdef __PX4_DARWIN
 	rv = pthread_setname_np(data->name);
 #else
-	rv = pthread_setname_np(pthread_self(), data->name);
+	char buf[17];
+	snprintf(buf, 16, "%s", data->name);
+	buf[16] = '0';
+	rv = pthread_setname_np(pthread_self(), buf);
 #endif
 
 	if (rv) {
@@ -181,7 +185,7 @@ px4_task_t px4_task_spawn_cmd(const char *name, int scheduler, int priority, int
 		stack_size = PTHREAD_STACK_MIN;
 	}
 
-	rv = pthread_attr_setstacksize(&attr, stack_size);
+	rv = pthread_attr_setstacksize(&attr, PX4_STACK_ADJUSTED(stack_size));
 
 	if (rv != 0) {
 		PX4_ERR("pthread_attr_setstacksize to %d returned error (%d)", stack_size, rv);

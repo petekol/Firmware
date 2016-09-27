@@ -366,7 +366,7 @@ static bool gnssCheck(orb_advert_t *mavlink_log_pub, bool report_fail)
 	else {
 		struct vehicle_gps_position_s gps;
 		if ( (OK != orb_copy(ORB_ID(vehicle_gps_position), gpsSub, &gps)) ||
-		    (hrt_elapsed_time(&gps.timestamp_position) > 1000000)) {
+		    (hrt_elapsed_time(&gps.timestamp) > 1000000)) {
 			success = false;
 		}
 	}
@@ -383,13 +383,16 @@ static bool gnssCheck(orb_advert_t *mavlink_log_pub, bool report_fail)
 }
 
 bool preflightCheck(orb_advert_t *mavlink_log_pub, bool checkMag, bool checkAcc, bool checkGyro,
-		    bool checkBaro, bool checkAirspeed, bool checkRC, bool checkGNSS, bool checkDynamic, bool reportFailures)
+		    bool checkBaro, bool checkAirspeed, bool checkRC, bool checkGNSS, bool checkDynamic, bool isVTOL, bool reportFailures)
 {
 
 #ifdef __PX4_QURT
 	// WARNING: Preflight checks are important and should be added back when
 	// all the sensors are supported
 	PX4_WARN("Preflight checks always pass on Snapdragon.");
+	return true;
+#elif defined(__LINUX)
+	PX4_WARN("Preflight checks always pass on Linux (RPI).");
 	return true;
 #endif
 
@@ -521,7 +524,7 @@ bool preflightCheck(orb_advert_t *mavlink_log_pub, bool checkMag, bool checkAcc,
 
 	/* ---- RC CALIBRATION ---- */
 	if (checkRC) {
-		if (rc_calibration_check(mavlink_log_pub, reportFailures) != OK) {
+		if (rc_calibration_check(mavlink_log_pub, reportFailures, isVTOL) != OK) {
 			if (reportFailures) {
 				mavlink_and_console_log_critical(mavlink_log_pub, "RC calibration check failed");
 			}

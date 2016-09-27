@@ -65,7 +65,8 @@ struct Params {
 enum mode {
 	ROTARY_WING = 0,
 	FIXED_WING,
-	TRANSITION,
+	TRANSITION_TO_FW,
+	TRANSITION_TO_MC,
 	EXTERNAL
 };
 
@@ -82,6 +83,8 @@ class VtolType
 public:
 
 	VtolType(VtolAttitudeControl *att_controller);
+	VtolType(const VtolType &) = delete;
+	VtolType &operator=(const VtolType &) = delete;
 
 	virtual ~VtolType();
 
@@ -120,6 +123,11 @@ public:
 	 * before TECS is running.
 	 */
 	virtual void waiting_on_tecs() {};
+
+	/**
+	 * Checks for fixed-wing failsafe condition and issues abort request if needed.
+	 */
+	void check_quadchute_condition();
 
 	/**
 	 * Returns true if we're allowed to do a mode transition on the ground.

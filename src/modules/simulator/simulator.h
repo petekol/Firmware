@@ -55,6 +55,7 @@
 #include <systemlib/battery.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/optical_flow.h>
+#include <uORB/topics/distance_sensor.h>
 #include <v1.0/mavlink_types.h>
 #include <v1.0/common/mavlink.h>
 namespace simulator
@@ -238,11 +239,13 @@ private:
 		_gyro_pub(nullptr),
 		_mag_pub(nullptr),
 		_flow_pub(nullptr),
+		_dist_pub(nullptr),
 		_battery_pub(nullptr),
 		_initialized(false)
 #ifndef __PX4_QURT
 		,
 		_rc_channels_pub(nullptr),
+		_attitude_pub(nullptr),
 		_actuator_outputs_sub{},
 		_vehicle_attitude_sub(-1),
 		_manual_sub(-1),
@@ -288,6 +291,7 @@ private:
 	orb_advert_t _gyro_pub;
 	orb_advert_t _mag_pub;
 	orb_advert_t _flow_pub;
+	orb_advert_t _dist_pub;
 	orb_advert_t _battery_pub;
 
 	bool _initialized;
@@ -298,10 +302,12 @@ private:
 	// class methods
 	int publish_sensor_topics(mavlink_hil_sensor_t *imu);
 	int publish_flow_topic(mavlink_hil_optical_flow_t *flow);
+	int publish_distance_topic(mavlink_distance_sensor_t *dist);
 
 #ifndef __PX4_QURT
 	// uORB publisher handlers
 	orb_advert_t _rc_channels_pub;
+	orb_advert_t _attitude_pub;
 
 	// uORB subscription handlers
 	int _actuator_outputs_sub[ORB_MULTI_MAX_INSTANCES];
@@ -321,7 +327,7 @@ private:
 	void send_controls();
 	void pollForMAVLinkMessages(bool publish, int udp_port);
 
-	void pack_actuator_message(mavlink_hil_controls_t &actuator_msg, unsigned index);
+	void pack_actuator_message(mavlink_hil_actuator_controls_t &actuator_msg, unsigned index);
 	void send_mavlink_message(const uint8_t msgid, const void *msg, uint8_t component_ID);
 	void update_sensors(mavlink_hil_sensor_t *imu);
 	void update_gps(mavlink_hil_gps_t *gps_sim);
