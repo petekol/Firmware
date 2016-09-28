@@ -262,10 +262,10 @@ function(px4_nuttx_add_export)
 	file(RELATIVE_PATH nuttx_cp_src ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/NuttX)
 	add_custom_command(OUTPUT nuttx_copy_${CONFIG}.stamp
 		COMMAND ${MKDIR} -p ${nuttx_src}
-		COMMAND rsync -a --delete --exclude=.git ${PX4_SOURCE_DIR}/NuttX/  ${nuttx_src}/
+		COMMAND rsync -a --delete --exclude=.git ${nuttx_cp_src}/ ${CONFIG}/NuttX/
 		COMMAND ${TOUCH} nuttx_copy_${CONFIG}.stamp
 		DEPENDS ${DEPENDS} ${nuttx_patches}
-		COMMENT "Copying NuttX for ${CONFIG} with ${config_nuttx_config}")
+		COMMENT "Copying NuttX for ${CONFIG} with ${config_nuttx_config} ${PX4_SOURCE_DIR} ${nuttx_src}")
 #todo: Add the nuttx source (md5 of git recursive staus) to the dependencies
 	
 	# patch
