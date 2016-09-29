@@ -566,7 +566,7 @@ BMP280::collect()
 
 
 	/* publish it */
-	if (!(_pub_blocked)) {
+	if (!(_pub_blocked) && _baro_topic) {
 		/* publish it */
 		orb_publish(ORB_ID(sensor_baro), _baro_topic, &report);
 	}
