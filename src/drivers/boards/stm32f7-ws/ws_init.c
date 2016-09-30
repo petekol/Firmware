@@ -67,6 +67,8 @@
 #include <stm32_i2c.h>
 #include <stm32_gpio.h>
 #include <stm32_uart.h>
+#include <stm32_sdmmc.h>
+
 
 #include "board_config.h"
 

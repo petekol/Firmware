@@ -40,6 +40,7 @@ px4_add_module(
 		ws_init.c
 		ws_timer_config.c
 		ws_spi.c
+		ws_usb.c
 		ws_led.c
 	DEPENDS
 		platforms__common
