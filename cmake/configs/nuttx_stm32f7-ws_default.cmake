@@ -136,8 +136,8 @@ set(config_module_list
 )
 
 set(config_extra_builtin_cmds
-	##serdis
-	##sercon
+	serdis
+	sercon
 	)
 
 set(config_extra_libs
@@ -146,14 +146,14 @@ set(config_extra_libs
 set(config_io_extra_libs
 	)
 
-##add_custom_target(sercon)
-##set_target_properties(sercon PROPERTIES
-##	PRIORITY "SCHED_PRIORITY_DEFAULT"
-##	MAIN "sercon"
-##	STACK_MAIN "2048")
+add_custom_target(sercon)
+set_target_properties(sercon PROPERTIES
+	PRIORITY "SCHED_PRIORITY_DEFAULT"
+	MAIN "sercon"
+	STACK_MAIN "2048")
 
-##add_custom_target(serdis)
-##set_target_properties(serdis PROPERTIES
-##	PRIORITY "SCHED_PRIORITY_DEFAULT"
-##	MAIN "serdis"
-##	STACK_MAIN "2048")
+add_custom_target(serdis)
+set_target_properties(serdis PROPERTIES
+	PRIORITY "SCHED_PRIORITY_DEFAULT"
+	MAIN "serdis"
+	STACK_MAIN "2048")
