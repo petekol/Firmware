@@ -151,7 +151,8 @@ __EXPORT void
 stm32_boardinitialize(void)
 {
 	/* configure ADC pins */
-	stm32_configgpio(GPIO_ADC1_IN2);	/* BATT_VOLTAGE_SENS */
+	stm32_configgpio(ADC_BATTERY_VOLTAGE_PIN);
+	stm32_configgpio(ADC_BATTERY_CURRENT_PIN);
 
 	/* configure the GPIO pins to outputs and keep them low */
 	stm32_configgpio(GPIO_GPIO0_OUTPUT);

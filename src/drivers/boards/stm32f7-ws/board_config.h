@@ -135,11 +135,15 @@ __BEGIN_DECLS
  *
  * These are the channel numbers of the ADCs of the microcontroller that can be used by the Px4 Firmware in the adc driver
  */
-#define ADC_CHANNELS (1 << 2)
+#define ADC_CHANNELS (1 << 14) | (1 << 15)
 
 // ADC defines to be used in sensors.cpp to read from a particular channel
-#define ADC_BATTERY_VOLTAGE_CHANNEL		2
-#define ADC_BATTERY_CURRENT_CHANNEL     0 //needed by sensors.cpp
+#define ADC_BATTERY_VOLTAGE_CHANNEL		14
+#define ADC_BATTERY_CURRENT_CHANNEL     15 //needed by sensors.cpp
+
+#define ADC_BATTERY_VOLTAGE_PIN     GPIO_ADC1_IN14
+#define ADC_BATTERY_CURRENT_PIN     GPIO_ADC1_IN15
+
 
 /* User GPIOs
  *
@@ -204,6 +208,8 @@ __BEGIN_DECLS
 #define HRT_TIMER		3	/* use timer8 for the HRT */
 #define HRT_TIMER_CHANNEL	4	/* use capture/compare channel */
 
+#define HRT_PPM_CHANNEL		3	/* use capture/compare channel 2, corresponds to pin B0 */
+#define GPIO_PPM_IN			(GPIO_ALT|GPIO_AF2|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN0)
 
 #define	BOARD_NAME "STM32F7_WS"
 
