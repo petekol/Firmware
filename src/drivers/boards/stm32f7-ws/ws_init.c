@@ -276,6 +276,11 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	SPI_SELECT(spi1, PX4_SPIDEV_MPU, false);
 	up_udelay(20);
 
+	/* turn sensor power on */
+	stm32_configgpio(GPIO_VDD_3V3_SENSORS_EN);
+	stm32_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
+	usleep(100);
+
 #ifdef CONFIG_MMCSD
 	/* First, get an instance of the SDIO interface */
 
